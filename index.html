@@ -235,6 +235,13 @@ body.desk .modal{box-shadow:0 12px 40px rgba(0,0,0,.28)}
 .celebrate .sub{color:var(--muted);font-size:13px}
 .celebrate .emo{font-size:34px;margin-bottom:8px;animation:pop .5s ease}
 @keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+/* day panel slide */
+.daypanel{touch-action:pan-y}
+.month-layout{overflow-x:clip}
+.slide-l{animation:slideL .22s ease}
+.slide-r{animation:slideR .22s ease}
+@keyframes slideL{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes slideR{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
 /* presets */
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 11px 4px 8px;font-size:13px}
@@ -514,7 +521,7 @@ function routineSect(ds){
 function dayDetail(ds, withHeader = true, withRoutine = false){
   const evs = eventsOn(ds), ts = tasksOn(ds);
   const done = ts.filter(t => t.done).length;
-  return `${withHeader ? `<h3>${fmtMD(ds)}</h3><div class="muted" style="font-size:13px">${ds === S.today ? "오늘" : ""}</div>` : ""}
+  return `${withHeader ? `<div style="display:flex;align-items:center;gap:6px"><h3 style="margin:0">${fmtMD(ds)}</h3><span class="spacer"></span><button class="mini" data-act="selPrev" aria-label="전날">‹ 전날</button><button class="mini" data-act="selNext" aria-label="다음날">다음날 ›</button></div><div class="muted" style="font-size:13px">${ds === S.today ? "오늘" : ""}</div>` : ""}
   <div class="sects"><div class="sect">
     <div class="sect-title">일정 <span class="spacer"></span><button class="mini" data-act="newEvent" data-date="${ds}">+ 일정 추가</button></div>
     ${(() => { const cl = classesOn(ds); return cl.length ? `<ul class="list">${cl.map(classRow).join("")}</ul>` : ""; })()}
@@ -559,7 +566,7 @@ function viewMonth(){
       <button class="btn primary" data-act="newEvent" data-date="${S.sel}">+ 일정</button>
     </div>
     <div class="month-layout">
-      ${monthPanelOn() ? (celebrateNow() ? celebrateHTML() : `<div class="card panel">${dayDetail(S.sel, true, monthRoutineOn())}</div>`) : ""}
+      ${monthPanelOn() ? (celebrateNow() ? celebrateHTML() : `<div class="card panel daypanel ${S.slide || ""}">${dayDetail(S.sel, true, monthRoutineOn())}</div>`) : ""}
       <div class="card cal"><div class="cal-head">${head}</div><div class="cal-grid">${cells}</div></div>
     </div>`;
 }
@@ -970,6 +977,28 @@ function viewDesk(){
     <div class="desk-head">${head}</div><div class="desk-grid">${cells}</div></div>`;
 }
 
+/* ---------- 월간 날짜 패널: 좌우 스와이프로 하루씩 이동 ---------- */
+function moveSel(n){
+  const d = addDays(parse(S.sel), n);
+  S.sel = ymd(d);
+  if (d.getMonth() !== S.month.getMonth() || d.getFullYear() !== S.month.getFullYear()) S.month = new Date(d.getFullYear(), d.getMonth(), 1);
+  S.slide = n > 0 ? "slide-l" : "slide-r";
+  render(); S.slide = "";
+}
+(() => {
+  let sx = 0, sy = 0, on = false;
+  const v = document.getElementById("view");
+  v.addEventListener("touchstart", e => {
+    on = !!e.target.closest(".daypanel") && !e.target.closest("input,textarea,select");
+    if (on) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }
+  }, {passive:true});
+  v.addEventListener("touchend", e => {
+    if (!on) return; on = false;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) moveSel(dx < 0 ? 1 : -1);
+  }, {passive:true});
+})();
+
 /* ---------- celebration ---------- */
 const settingsDoc = () => S.items.get("settings") || {};
 const nickname = () => settingsDoc().nickname || (S.userName || "나");
@@ -1322,6 +1351,8 @@ document.getElementById("view").addEventListener("click", e => {
     case "toggleCheck": toggleCheck(id); break;
     case "editCheck": checkModal(id); break;
     case "newCheck": checkModal(null); break;
+    case "selPrev": moveSel(-1); break;
+    case "selNext": moveSel(1); break;
     case "showDayAnyway": S.showDayAnyway = S.today; render(); break;
     case "weekAdd": {
       S.weekAdd = S.weekAdd === ds ? null : ds; render();
