@@ -3,33 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#fadbd8">
+<meta name="theme-color" content="#ffdeed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Me.Plan">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<script>try{var t=localStorage.getItem("planner-theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script>try{var t=localStorage.getItem("planner-theme");if(t)document.documentElement.dataset.theme=t;if(t==="custom"){var v=JSON.parse(localStorage.getItem("planner-custom-vars")||"{}");for(var k in v)document.documentElement.style.setProperty(k,v[k]);}}catch(e){}</script>
 <title>Me.Plan</title>
 
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root,[data-theme="rose"]{
-  --bg:#fadbd8; --paper:#fff8f7; --ink:#3a2321; --ink2:#6b4a46; --muted:#a67f7a; --line:#f2cfca; --soft:#f6d2ce;
-  --accent:#c95467; --on-accent:#fff; --accent-soft:#fbe4e1; --sun:#c8394a; --sat:#4a64b8; --warn:#b85a2c;
-  --cell-out:#fdefed; --hover:#fff1ef; --today-row:#fff0ee; --chk:#e3aca5; --badge:#fbe2d6; --input:#fff; --overlay:rgba(70,30,28,.3);
+  --bg:#ffdeed; --paper:#fff8fb; --ink:#3b2230; --ink2:#6b4659; --muted:#a67f92; --line:#f4cfe0; --soft:#fad3e5;
+  --accent:#c94f86; --on-accent:#fff; --accent-soft:#fde6f0; --sun:#c8394a; --sat:#4a64b8; --warn:#b85a2c;
+  --cell-out:#fff0f6; --hover:#fff2f8; --today-row:#fff0f6; --chk:#e8a9c5; --badge:#fbe2d6; --input:#fff; --overlay:rgba(70,25,45,.3);
   --r:12px;
 }
 [data-theme="white"]{
-  --bg:#ffffff; --paper:#ffffff; --ink:#1d1d1f; --ink2:#48484a; --muted:#8e8e93; --line:#e3e3e8; --soft:#f2f2f5;
-  --accent:#2c2c2e; --on-accent:#fff; --accent-soft:#efeff2; --sun:#d0393f; --sat:#3460c4; --warn:#b5651d;
-  --cell-out:#fafafa; --hover:#f6f6f8; --today-row:#f7f7f9; --chk:#c7c7cc; --badge:#f6ece2; --input:#fff; --overlay:rgba(0,0,0,.25);
+  --bg:#fcfeff; --paper:#ffffff; --ink:#1d1f22; --ink2:#474b51; --muted:#8c9198; --line:#e2e6ea; --soft:#f0f3f6;
+  --accent:#2c2e32; --on-accent:#fff; --accent-soft:#eef1f4; --sun:#d0393f; --sat:#3460c4; --warn:#b5651d;
+  --cell-out:#f8fafb; --hover:#f4f7f9; --today-row:#f5f8fa; --chk:#c5cad0; --badge:#f6ece2; --input:#fff; --overlay:rgba(0,0,0,.25);
 }
 [data-theme="black"]{
-  --bg:#000000; --paper:#121212; --ink:#f2f2f2; --ink2:#c9c9c9; --muted:#8a8a8a; --line:#2a2a2a; --soft:#1f1f1f;
-  --accent:#ededed; --on-accent:#000; --accent-soft:#262626; --sun:#ff6b6b; --sat:#7aa2ff; --warn:#f0a35e;
-  --cell-out:#0a0a0a; --hover:#1b1b1b; --today-row:#181818; --chk:#555; --badge:#33261a; --input:#1a1a1a; --overlay:rgba(0,0,0,.6);
+  --bg:#262626; --paper:#303030; --ink:#f0f0f0; --ink2:#c9c9c9; --muted:#8f8f8f; --line:#424242; --soft:#383838;
+  --accent:#ececec; --on-accent:#262626; --accent-soft:#3c3c3c; --sun:#ff7b7b; --sat:#86a8ff; --warn:#f0a35e;
+  --cell-out:#2b2b2b; --hover:#3a3a3a; --today-row:#353535; --chk:#6a6a6a; --badge:#4a3a2a; --input:#2c2c2c; --overlay:rgba(0,0,0,.55);
 }
 [data-theme="sky"]{
   --bg:#bbcbd2; --paper:#f6f9fa; --ink:#1e2a30; --ink2:#44555d; --muted:#72858d; --line:#c6d4da; --soft:#d0dde2;
@@ -37,14 +37,14 @@
   --cell-out:#edf2f4; --hover:#eff4f6; --today-row:#ecf2f5; --chk:#a3b9c2; --badge:#f1e5d5; --input:#fff; --overlay:rgba(20,40,50,.3);
 }
 [data-theme="butter"]{
-  --bg:#fad892; --paper:#fffbf1; --ink:#3a2c12; --ink2:#6a5733; --muted:#a08c62; --line:#f0d9a2; --soft:#f5dfa8;
-  --accent:#b5742a; --on-accent:#fff; --accent-soft:#fcefd0; --sun:#c4473a; --sat:#4a64b8; --warn:#a65a1f;
-  --cell-out:#fdf3dc; --hover:#fff5de; --today-row:#fff3d8; --chk:#ddbb76; --badge:#f8e1c6; --input:#fff; --overlay:rgba(60,40,10,.3);
+  --bg:#ffeebd; --paper:#fffcf2; --ink:#3a2c12; --ink2:#6a5733; --muted:#a08c62; --line:#f2dfa8; --soft:#f9e6b1;
+  --accent:#b5742a; --on-accent:#fff; --accent-soft:#fdf2d6; --sun:#c4473a; --sat:#4a64b8; --warn:#a65a1f;
+  --cell-out:#fff7de; --hover:#fff8e6; --today-row:#fff6da; --chk:#e1c27c; --badge:#f8e1c6; --input:#fff; --overlay:rgba(60,40,10,.3);
 }
 [data-theme="navy"]{
-  --bg:#081a2e; --paper:#0f2540; --ink:#e8eef6; --ink2:#b8c6d6; --muted:#7f93aa; --line:#1e3854; --soft:#17304d;
-  --accent:#7fb2e5; --on-accent:#081a2e; --accent-soft:#183656; --sun:#ff8a80; --sat:#8fb4ff; --warn:#f2b066;
-  --cell-out:#0b2038; --hover:#15304f; --today-row:#122c4a; --chk:#3d5a7a; --badge:#3a3020; --input:#0b2038; --overlay:rgba(0,0,0,.55);
+  --bg:#101047; --paper:#191a5a; --ink:#ecebff; --ink2:#c4c3ec; --muted:#8d8cc0; --line:#2b2c72; --soft:#222367;
+  --accent:#a3abff; --on-accent:#101047; --accent-soft:#262772; --sun:#ff8a95; --sat:#9fc0ff; --warn:#f2b066;
+  --cell-out:#13134e; --hover:#23246a; --today-row:#1d1e60; --chk:#4a4b92; --badge:#3d3424; --input:#14144f; --overlay:rgba(0,0,0,.55);
 }
 
 *{box-sizing:border-box}
@@ -242,6 +242,22 @@ body.desk .modal{box-shadow:0 12px 40px rgba(0,0,0,.28)}
 .slide-r{animation:slideR .22s ease}
 @keyframes slideL{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
 @keyframes slideR{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
+.addbtn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--accent);font-size:20px;line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center;font-weight:400}
+.addbtn:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.topline [data-act=wallInfo]{color:var(--ink2);font-weight:600;font-size:14px}
+/* tutorial */
+.modal.tutm{max-width:400px;padding:0}
+.tut{position:relative;padding:34px 24px 18px;text-align:center}
+.tut-x{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--muted);font-size:18px;width:32px;height:32px;border-radius:50%}
+.tut-x:hover{background:var(--soft);color:var(--ink)}
+.tut-emo{font-size:44px;margin-bottom:6px}
+.tut h3{margin:0 0 10px;font-size:19px}
+.tut-body{font-size:14.5px;line-height:1.65;color:var(--ink2);min-height:118px;text-align:left}
+.tut-body b{color:var(--ink)}
+.tut-dots{display:flex;gap:6px;justify-content:center;margin:16px 0 14px}
+.tut-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.tut-dots i.on{background:var(--accent);width:18px;border-radius:4px}
+.tut-foot{display:flex;gap:6px;align-items:center}
 /* presets */
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 11px 4px 8px;font-size:13px}
@@ -305,9 +321,10 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
 .themes{display:flex;gap:6px;align-items:center}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
 .themes button.on{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ink)}
+.themes button.plus{background:conic-gradient(#f87171,#fbbf24,#a3e635,#34d399,#60a5fa,#a78bfa,#f472b6,#f87171);color:#fff;font-size:13px;line-height:1;font-weight:700;text-shadow:0 0 2px rgba(0,0,0,.5);display:inline-flex;align-items:center;justify-content:center}
 input,select,textarea{color:var(--ink)}
 html{color-scheme:light}
-[data-theme="black"],[data-theme="navy"]{color-scheme:dark}
+[data-theme="black"],[data-theme="navy"],[data-theme="custom"].dark{color-scheme:dark}
 /* modal */
 .overlay{position:fixed;inset:0;background:var(--overlay);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
 .overlay.open{display:flex}
@@ -523,7 +540,7 @@ function dayDetail(ds, withHeader = true, withRoutine = false){
   const done = ts.filter(t => t.done).length;
   return `${withHeader ? `<div style="display:flex;align-items:center;gap:6px"><h3 style="margin:0">${fmtMD(ds)}</h3><span class="spacer"></span><button class="mini" data-act="selPrev" aria-label="전날">‹ 전날</button><button class="mini" data-act="selNext" aria-label="다음날">다음날 ›</button></div><div class="muted" style="font-size:13px">${ds === S.today ? "오늘" : ""}</div>` : ""}
   <div class="sects"><div class="sect">
-    <div class="sect-title">일정 <span class="spacer"></span><button class="mini" data-act="newEvent" data-date="${ds}">+ 일정 추가</button></div>
+    <div class="sect-title">일정 <span class="spacer"></span><button class="addbtn" data-act="newEvent" data-date="${ds}" title="일정 추가" aria-label="일정 추가">+</button></div>
     ${(() => { const cl = classesOn(ds); return cl.length ? `<ul class="list">${cl.map(classRow).join("")}</ul>` : ""; })()}
     ${evs.length ? `<ul class="list">${evs.map(e => eventRow(e, ds)).join("")}</ul>` : (classesOn(ds).length ? "" : `<div class="empty">일정 없음</div>`)}
   </div>
@@ -563,7 +580,7 @@ function viewMonth(){
       <button class="btn icon" data-act="monthNext" aria-label="다음 달">›</button>
       <button class="btn" data-act="monthToday">오늘</button>
       <span class="spacer"></span>
-      <button class="btn primary" data-act="newEvent" data-date="${S.sel}">+ 일정</button>
+      ${monthPanelOn() ? "" : `<button class="btn primary" data-act="newEvent" data-date="${S.sel}">+ 일정</button>`}
     </div>
     <div class="month-layout">
       ${monthPanelOn() ? (celebrateNow() ? celebrateHTML() : `<div class="card panel daypanel ${S.slide || ""}">${dayDetail(S.sel, true, monthRoutineOn())}</div>`) : ""}
@@ -646,7 +663,7 @@ function viewChecklist(){
   const plain = items.filter(it => !isRoutine(it));
   const rDone = todayR.filter(ckDone).length, pDone = plain.filter(it => it.done).length;
   const groups = [...new Set(items.map(i => i.group).filter(Boolean))];
-  return `<div class="bar"><h2>체크리스트</h2><span class="spacer"></span><button class="btn primary" data-act="newCheck">+ 항목 (상세 설정)</button></div>
+  return `<div class="bar"><h2>체크리스트</h2></div>
   <div class="ck-layout">
     <div class="card panel">
       <div class="sect-title" style="margin-bottom:0">루틴 ${todayR.length ? `<span class="badge g">오늘 ${rDone}/${todayR.length}</span>` : ""}</div>
@@ -999,6 +1016,43 @@ function moveSel(n){
   }, {passive:true});
 })();
 
+/* ---------- 튜토리얼 ---------- */
+const TUT = [
+  ["👋", "Me.Plan에 온 걸 환영해!", "대부분은 보이는 대로 쓰면 되는데, 숨어 있는 기능 몇 가지만 빠르게 알려줄게."],
+  ["↔️", "월간 화면에서 날짜 넘기기", "위쪽 ‹ › 버튼은 <b>달</b>을 넘겨.<br>일정·할 일 칸을 <b>옆으로 밀면 하루씩</b> 넘어가. 컴퓨터에서는 칸 오른쪽 위 <b>‹ 전날 · 다음날 ›</b>을 눌러.<br>달력에서 날짜를 눌러도 그날로 바로 가."],
+  ["⚙️", "화면은 내 마음대로", "<b>⚙ 설정</b>에서 탭을 숨기거나 순서를 바꿀 수 있어. 맨 위 탭이 처음 열리는 화면이 돼.<br>월간 화면의 <b>일정·할 일 칸</b>과 <b>루틴 칸</b>도 켜고 끌 수 있고, 닉네임이랑 축하 메시지도 여기서 정해."],
+  ["🖥️", "컴퓨터 바탕화면에 달력 붙이기", "위쪽 <b>ⓘ</b> 버튼을 누르면 Me.Plan을 컴퓨터 바탕화면 달력으로 고정하는 방법이 나와.<br>투명도, 글자 색, 크기, 위치까지 바꿀 수 있어."],
+  ["🔁", "체크리스트와 루틴", "<b>체크리스트</b> 탭은 날짜와 상관없는 할 일 목록이야.<br><b>루틴</b>은 매일·요일·매주·매월마다 체크가 새로 풀리고, 연속으로 하면 'n연속'이 붙어.<br>날짜별 할 일은 못 끝내면 <b>다음 날로 자동 이월</b>돼."],
+  ["⚡", "프리셋으로 빠르게 추가", "PT, 알바처럼 자주 넣는 일정은 <b>프리셋</b> 탭에서 이름·색·소요 시간을 저장해둬.<br>그러면 할 일 칸 아래 버튼을 눌러 <b>날짜와 시간만</b> 고르면 바로 들어가."],
+  ["🗓️", "시간표는 사진 한 장으로", "<b>시간표</b> 탭에서 <b>이미지로 불러오기</b>를 누르고 에브리타임 시간표 캡처를 올리면 AI가 읽어서 채워줘.<br>수업은 월간·주간·일간 화면에도 자동으로 나와."],
+];
+function tutorialOff(){ try { if (localStorage.getItem("planner-tut-off")) return true; } catch(_){} return !!(S.items.get("settings") || {}).tutorialOff; }
+function showTutorial(){
+  let i = 0;
+  const draw = () => {
+    const [emo, title, body] = TUT[i], last = i === TUT.length - 1;
+    modal.innerHTML = `<div class="tut">
+      <button class="tut-x" id="tutX" aria-label="닫기">✕</button>
+      <div class="tut-emo">${emo}</div><h3>${title}</h3><div class="tut-body">${body}</div>
+      <div class="tut-dots">${TUT.map((_,k) => `<i class="${k===i?"on":""}"></i>`).join("")}</div>
+      <div class="tut-foot"><button class="mini" id="tutOff">다시 보지 않기</button><span class="spacer"></span>
+        ${i > 0 ? `<button class="btn" id="tutPrev">이전</button>` : ""}
+        ${last ? "" : `<button class="btn" id="tutSkip">건너뛰기</button>`}
+        <button class="btn primary" id="tutNext">${last ? "시작하기" : "다음"}</button></div></div>`;
+    modal.querySelector("#tutX").onclick = closeModal;
+    modal.querySelector("#tutOff").onclick = () => { try { localStorage.setItem("planner-tut-off","1"); } catch(_){} if (S.col) saveSettings({tutorialOff:true}); closeModal(); };
+    const sk = modal.querySelector("#tutSkip"); if (sk) sk.onclick = closeModal;
+    const pv = modal.querySelector("#tutPrev"); if (pv) pv.onclick = () => { i--; draw(); };
+    modal.querySelector("#tutNext").onclick = () => { if (last) { closeModal(); return; } i++; draw(); };
+  };
+  modal.classList.add("tutm"); draw(); overlay.classList.add("open");
+}
+function maybeTutorial(){
+  if (S.desk || tutorialOff()) return;
+  try { if (sessionStorage.getItem("planner-tut-seen")) return; sessionStorage.setItem("planner-tut-seen","1"); } catch(_){}
+  if (!overlay.classList.contains("open")) showTutorial();
+}
+
 /* ---------- celebration ---------- */
 const settingsDoc = () => S.items.get("settings") || {};
 const nickname = () => settingsDoc().nickname || (S.userName || "나");
@@ -1122,20 +1176,115 @@ function usePresetModal(id, ds){
 }
 
 /* ---------- theme ---------- */
-const THEMES = [["rose","#fadbd8","로즈"],["white","#ffffff","화이트"],["black","#000000","블랙"],["sky","#bbcbd2","블루그레이"],["butter","#fad892","버터"],["navy","#081a2e","네이비"]];
-function applyTheme(t){
-  if (!THEMES.some(x => x[0] === t)) t = "rose";
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem("planner-theme", t); } catch(_){}
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = THEMES.find(x => x[0] === t)[1];
-  document.querySelectorAll("#themes button").forEach(b => b.classList.toggle("on", b.dataset.theme === t));
+const THEMES = [["rose","#ffdeed","핑크"],["white","#fcfeff","화이트"],["black","#262626","블랙"],["sky","#bbcbd2","블루그레이"],["butter","#ffeebd","버터"],["navy","#101047","네이비"]];
+/* 커스텀 테마: 배경색 하나로 나머지 색을 계산 */
+function hexToHsl(hex){
+  let r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b); let h = 0, sat = 0; const l = (mx+mn)/2;
+  if (mx !== mn) { const d = mx-mn; sat = l > .5 ? d/(2-mx-mn) : d/(mx+mn);
+    h = mx === r ? (g-b)/d + (g<b?6:0) : mx === g ? (b-r)/d + 2 : (r-g)/d + 4; h /= 6; }
+  return [h*360, sat, l];
 }
-document.getElementById("themes").innerHTML = THEMES.map(([k,c,n]) => `<button data-theme="${k}" title="${n}" aria-label="${n} 테마" style="background:${c}"></button>`).join("");
+const hsl = (h, s_, l) => `hsl(${Math.round(h)} ${Math.round(Math.max(0,Math.min(1,s_))*100)}% ${Math.round(Math.max(0,Math.min(1,l))*100)}%)`;
+function customVars(hex){
+  const [h, sa, l] = hexToHsl(hex);
+  const lum = (() => { const c = [1,3,5].map(i => { const v = parseInt(hex.slice(i,i+2),16)/255; return v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4; }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; })();
+  const dark = lum < .3, cs = Math.min(sa, .55);
+  const v = dark ? {
+    "--bg":hex, "--paper":hsl(h,sa,l+.07), "--ink":hsl(h,.25,.94), "--ink2":hsl(h,.18,.8), "--muted":hsl(h,.14,.62), "--line":hsl(h,sa,l+.15), "--soft":hsl(h,sa,l+.11),
+    "--accent":hsl(h,Math.max(.55,sa),.76), "--on-accent":hex, "--accent-soft":hsl(h,sa,l+.13), "--sun":"#ff8a95", "--sat":"#9fc0ff", "--warn":"#f2b066",
+    "--cell-out":hsl(h,sa,l+.03), "--hover":hsl(h,sa,l+.13), "--today-row":hsl(h,sa,l+.09), "--chk":hsl(h,.3,l+.3), "--badge":"#3d3424", "--input":hsl(h,sa,l+.04), "--overlay":"rgba(0,0,0,.55)"
+  } : {
+    "--bg":hex, "--paper":hsl(h,cs,Math.max(l,.9)+(1-Math.max(l,.9))*.75), "--ink":hsl(h,.3,.15), "--ink2":hsl(h,.2,.32), "--muted":hsl(h,.14,.55), "--line":hsl(h,cs,l-.07), "--soft":hsl(h,cs,l-.035),
+    "--accent":hsl(h,Math.max(.45,cs),.45), "--on-accent":"#fff", "--accent-soft":hsl(h,cs,.94), "--sun":"#c8394a", "--sat":"#4a64b8", "--warn":"#b85a2c",
+    "--cell-out":hsl(h,cs,Math.min(.985,l+.05)), "--hover":hsl(h,cs,Math.min(.99,l+.06)), "--today-row":hsl(h,cs,Math.min(.985,l+.05)), "--chk":hsl(h,.35,.72), "--badge":"#f6e4d4", "--input":"#fff", "--overlay":"rgba(0,0,0,.28)"
+  };
+  return {vars:v, dark};
+}
+const CUSTOM_VARS = ["--bg","--paper","--ink","--ink2","--muted","--line","--soft","--accent","--on-accent","--accent-soft","--sun","--sat","--warn","--cell-out","--hover","--today-row","--chk","--badge","--input","--overlay"];
+const customColor = () => (S.items && S.items.get("settings") || {}).customBg || (() => { try { return localStorage.getItem("planner-custom-bg"); } catch(_) { return null; } })();
+function applyTheme(t, hexOverride){
+  const root = document.documentElement;
+  CUSTOM_VARS.forEach(k => root.style.removeProperty(k)); root.classList.remove("dark");
+  let swatch;
+  if (t === "custom" && (hexOverride || customColor())) {
+    const hex = hexOverride || customColor(), {vars, dark} = customVars(hex);
+    for (const k in vars) root.style.setProperty(k, vars[k]);
+    root.classList.toggle("dark", dark);
+    try { localStorage.setItem("planner-custom-vars", JSON.stringify(vars)); localStorage.setItem("planner-custom-bg", hex); } catch(_){}
+    swatch = hex;
+  } else {
+    if (!THEMES.some(x => x[0] === t)) t = "rose";
+    swatch = THEMES.find(x => x[0] === t)[1];
+  }
+  root.dataset.theme = t;
+  try { localStorage.setItem("planner-theme", t); } catch(_){}
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = swatch;
+  drawThemeDots();
+}
+function drawThemeDots(){
+  const t = document.documentElement.dataset.theme, cc = customColor();
+  document.getElementById("themes").innerHTML = THEMES.map(([k,c,n]) => `<button data-theme="${k}" class="${k===t?"on":""}" title="${n}" aria-label="${n} 테마" style="background:${c}"></button>`).join("")
+    + (cc ? `<button data-theme="custom" class="${t==="custom"?"on":""}" title="내 색" aria-label="내 색 테마" style="background:${cc}"></button>` : "")
+    + `<button data-act="customTheme" class="plus" title="색 직접 만들기" aria-label="색 직접 만들기">+</button>`;
+}
 document.getElementById("themes").addEventListener("click", e => {
+  if (e.target.closest("[data-act=customTheme]")) { customThemeModal(); return; }
   const b = e.target.closest("button[data-theme]"); if (!b) return;
   applyTheme(b.dataset.theme);
   if (S.col) saveSettings({theme:b.dataset.theme});
 });
+function customThemeModal(){
+  let [h0, s0, l0] = hexToHsl(customColor() || "#d7c4f2");
+  const st = {h:h0, s:s0, l:l0};
+  const toHex = () => { const el = document.createElement("div"); el.style.color = hsl(st.h, st.s, st.l); document.body.appendChild(el); const m = getComputedStyle(el).color.match(/\d+/g).map(Number); el.remove(); return "#" + m.slice(0,3).map(x => x.toString(16).padStart(2,"0")).join(""); };
+  const prevTheme = document.documentElement.dataset.theme;
+  const f = openModal("내 색 만들기", `
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <canvas id="wheel" width="220" height="220" style="width:180px;height:180px;touch-action:none;cursor:crosshair;border-radius:50%"></canvas>
+      <div style="flex:1;min-width:150px">
+        <div class="field"><label>밝기</label><input type="range" name="lt" min="5" max="97" value="${Math.round(st.l*100)}"></div>
+        <div class="field"><label>색상 코드</label><input name="hex" maxlength="7" style="font-family:monospace"></div>
+        <div id="pv" style="height:36px;border-radius:10px;border:1px solid var(--line)"></div>
+      </div>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:8px">배경색을 고르면 글자·버튼 색은 거기에 맞춰 자동으로 정해져. 움직이는 대로 미리보기돼.</div>`,
+    () => {
+      const hex = f.hex.value.trim();
+      if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return "#RRGGBB 형식으로 적어줘.";
+      try { localStorage.setItem("planner-custom-bg", hex.toLowerCase()); } catch(_){}
+      if (S.col) saveSettings({theme:"custom", customBg:hex.toLowerCase()}); else applyTheme("custom", hex.toLowerCase());
+      applyTheme("custom", hex.toLowerCase());
+    });
+  const cv = f.querySelector("#wheel"), ctx = cv.getContext("2d"), R0 = 110;
+  const drawWheel = () => {
+    const img = ctx.createImageData(220, 220);
+    for (let y = 0; y < 220; y++) for (let x = 0; x < 220; x++) {
+      const dx = x - R0, dy = y - R0, r = Math.hypot(dx, dy), i = (y*220+x)*4;
+      if (r > R0) { img.data[i+3] = 0; continue; }
+      const hh = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, ss = r / R0, ll = st.l;
+      const c = (1 - Math.abs(2*ll - 1)) * ss, xx = c * (1 - Math.abs((hh/60) % 2 - 1)), m = ll - c/2;
+      const [r1,g1,b1] = hh < 60 ? [c,xx,0] : hh < 120 ? [xx,c,0] : hh < 180 ? [0,c,xx] : hh < 240 ? [0,xx,c] : hh < 300 ? [xx,0,c] : [c,0,xx];
+      img.data[i] = (r1+m)*255; img.data[i+1] = (g1+m)*255; img.data[i+2] = (b1+m)*255; img.data[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const a = st.h * Math.PI / 180, px = R0 + Math.cos(a) * st.s * R0, py = R0 + Math.sin(a) * st.s * R0;
+    ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py, 8, 0, 7); ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "#000"; ctx.beginPath(); ctx.arc(px, py, 10, 0, 7); ctx.stroke();
+  };
+  const sync = (fromHex) => { const hex = fromHex || toHex(); if (!fromHex) f.hex.value = hex; f.querySelector("#pv").style.background = hex; drawWheel(); applyTheme("custom", hex); };
+  const pick = e => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 220 - R0, y = (e.clientY - r.top) / r.height * 220 - R0;
+    st.h = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; st.s = Math.min(1, Math.hypot(x, y) / R0); sync(); };
+  let down = false;
+  cv.addEventListener("pointerdown", e => { down = true; cv.setPointerCapture(e.pointerId); pick(e); });
+  cv.addEventListener("pointermove", e => { if (down) pick(e); });
+  cv.addEventListener("pointerup", () => down = false);
+  f.lt.addEventListener("input", () => { st.l = f.lt.value / 100; sync(); });
+  f.hex.addEventListener("input", () => { const v = f.hex.value.trim(); if (/^#[0-9a-fA-F]{6}$/.test(v)) { [st.h, st.s, st.l] = hexToHsl(v); f.lt.value = Math.round(st.l*100); sync(v); } });
+  f.hex.value = customColor() || "#d7c4f2"; sync(f.hex.value);
+  modal.querySelector("#mcancel").addEventListener("click", () => applyTheme(prevTheme));
+  overlay.addEventListener("mousedown", function revert(ev){ if (ev.target === overlay) applyTheme(prevTheme); overlay.removeEventListener("mousedown", revert); });
+}
 applyTheme(document.documentElement.dataset.theme || "rose");
 
 /* ---------- render ---------- */
@@ -1198,7 +1347,9 @@ function tabSettingsModal(){
     <div class="muted" style="font-size:12px;margin-top:4px">끄면 달력만 보이고, 날짜를 누르면 일간 화면으로 넘어가.</div>
     <div class="sect-title" style="margin-top:16px">닉네임 · 축하 메시지</div>
     <div class="field"><input name="nickname" value="${esc(settingsDoc().nickname || "")}" placeholder="${esc(S.userName || "닉네임")}" maxlength="20"></div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="celebrate" ${celebrateOn() ? "checked" : ""}> 오늘 일정·할 일을 다 끝내면 축하 메시지 보이기</label>`,
+    <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="celebrate" ${celebrateOn() ? "checked" : ""}> 오늘 일정·할 일을 다 끝내면 축하 메시지 보이기</label>
+    <div class="sect-title" style="margin-top:16px">도움말</div>
+    <button type="button" class="btn" id="tutAgain">튜토리얼 다시 보기</button>`,
     f => {
       if (!cfg.some(t => t.on)) return "탭을 하나 이상 켜줘.";
       try { localStorage.setItem("planner-tabs", JSON.stringify(cfg)); } catch(_){}
@@ -1206,6 +1357,7 @@ function tabSettingsModal(){
       route();
     });
   const box = f.querySelector("#tabList"); draw();
+  f.querySelector("#tutAgain").onclick = () => { try { localStorage.removeItem("planner-tut-off"); } catch(_){} if (S.col) saveSettings({tutorialOff:false}); closeModal(); showTutorial(); };
   box.addEventListener("click", e => {
     const u = e.target.closest("[data-up]"), d = e.target.closest("[data-down]");
     if (u) { const i = +u.dataset.up; [cfg[i-1], cfg[i]] = [cfg[i], cfg[i-1]]; draw(); }
@@ -1217,7 +1369,7 @@ window.addEventListener("hashchange", route);
 
 /* ---------- modal ---------- */
 const overlay = document.getElementById("overlay"), modal = document.getElementById("modal");
-function closeModal(){ overlay.classList.remove("open"); modal.innerHTML = ""; }
+function closeModal(){ overlay.classList.remove("open"); modal.innerHTML = ""; modal.classList.remove("tutm"); }
 overlay.addEventListener("mousedown", e => { if (e.target === overlay) closeModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay.classList.contains("open")) closeModal(); });
 function openModal(title, body, onSave, onDelete){
@@ -1471,9 +1623,9 @@ route();
       unsub = F.onSnapshot(colRef, {includeMetadataChanges: true}, snap => {
         S.items = new Map(snap.docs.map(d => [d.id, d.data()]));
         const st = S.items.get("settings");
-        if (st && st.theme && st.theme !== document.documentElement.dataset.theme) applyTheme(st.theme);
+        if (st && st.theme && (st.theme !== document.documentElement.dataset.theme || (st.theme === "custom" && st.customBg && st.customBg !== localStorage.getItem("planner-custom-bg"))) && !overlay.classList.contains("open")) applyTheme(st.theme);
         if (S.desk && !overlay.classList.contains("open")) applyDesk();
-        if (!snap.metadata.fromCache && !S.rolled) { S.rolled = true; rollover(); }
+        if (!snap.metadata.fromCache && !S.rolled) { S.rolled = true; rollover(); setTimeout(maybeTutorial, 400); }
         setStatus(snap.metadata.fromCache ? "오프라인 · 연결되면 자동으로 동기화돼" : "");
         render();
       }, err => handleErr(err));
