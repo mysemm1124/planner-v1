@@ -195,6 +195,28 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .pcard:hover{background:var(--hover)}
 .pcard .sw{width:14px;height:14px;border-radius:50%;flex:none}
 .pcard .nm{flex:1;font-weight:500}
+/* desk (wallpaper) mode */
+html.desk,html.desk body{background:transparent}
+.desk-bg{position:fixed;inset:0;background:var(--bg);z-index:-1;pointer-events:none}
+body.desk .wrap{max-width:none;padding:0;height:100vh;display:flex;flex-direction:column}
+body.desk header,body.desk .topline{display:none}
+body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
+.desk{flex:1;display:flex;flex-direction:column;min-height:0;padding:14px 18px 12px}
+.desk-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.desk-top h2{margin:0;font-size:20px;font-weight:600}
+.desk-head,.desk-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.desk-head div{text-align:center;font-size:13px;color:var(--muted);font-weight:600;padding:4px 0}
+.desk-head .sun{color:var(--sun)} .desk-head .sat{color:var(--sat)}
+.desk-grid{flex:1;min-height:0;grid-auto-rows:1fr}
+.dcell{border-top:1px solid var(--line);padding:6px 7px;overflow:hidden;cursor:pointer;min-width:0;border-radius:6px}
+.dcell:hover{background:var(--hover)}
+.dcell .n{font-size:13px;font-weight:600}
+.dcell.out .n{opacity:.4}
+.dcell.sun .n{color:var(--sun)} .dcell.sat .n{color:var(--sat)}
+.dcell.is-today{box-shadow:inset 0 0 0 2px var(--accent)}
+.dline{font-size:12.5px;line-height:1.35;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dline i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dline.task{color:var(--ink2)} .dline.task.done{text-decoration:line-through;color:var(--muted)}
 /* tabs fill the row on phones */
 @media (max-width:760px){
   nav.tabs{width:100%}
@@ -249,7 +271,7 @@ html{color-scheme:light}
     </div>
     <nav class="tabs" id="tabs"></nav>
   </header>
-  <div style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><div class="themes" id="themes"></div><button class="mini" data-act="tabSettings" title="설정">⚙ 설정</button><button class="mini" data-act="logout">로그아웃</button></div>
+  <div class="topline" style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><div class="themes" id="themes"></div><button class="mini" data-act="tabSettings" title="설정">⚙ 설정</button><button class="mini" data-act="logout">로그아웃</button></div>
   <main id="view"></main>
 </div>
 
@@ -721,6 +743,35 @@ function importModal(){
   };
 }
 
+/* ---------- desk (wallpaper) ---------- */
+S.desk = /[?&]desk\b/.test(location.search);
+if (S.desk) {
+  document.documentElement.classList.add("desk"); document.body.classList.add("desk");
+  const a = Number((location.search.match(/[?&]a=(\d+)/) || [])[1] ?? 55);
+  const bg = document.createElement("div"); bg.className = "desk-bg"; bg.style.opacity = Math.max(0, Math.min(100, a)) / 100;
+  document.body.prepend(bg);
+}
+function viewDesk(){
+  const m = S.month, y = m.getFullYear(), mo = m.getMonth();
+  const start = startOfWeek(new Date(y, mo, 1));
+  const end = addDays(startOfWeek(new Date(y, mo+1, 0)), 6);
+  let cells = "";
+  for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+    const ds = ymd(d), dow = d.getDay();
+    const evs = eventsOn(ds), ts = tasksOn(ds);
+    const lines = evs.map(e => `<div class="dline"><i style="background:${esc(e.color||COLORS[0])}"></i>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</div>`).join("")
+      + ts.map(t => `<div class="dline task ${t.done ? "done" : ""}">${t.done ? "☑" : "☐"} ${esc(t.title)}</div>`).join("");
+    cells += `<div class="dcell ${d.getMonth() !== mo ? "out" : ""} ${dow===0?"sun":dow===6?"sat":""} ${ds===S.today?"is-today":""}" data-act="deskDay" data-date="${ds}">
+      <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}</div>${lines}</div>`;
+  }
+  const head = ["월","화","수","목","금","토","일"].map((w,i) => `<div class="${i===6?"sun":i===5?"sat":""}">${w}요일</div>`).join("");
+  return `<div class="desk">
+    <div class="desk-top"><h2>${y}년 ${mo+1}월</h2>
+      <button class="btn icon" data-act="monthPrev">‹</button><button class="btn icon" data-act="monthNext">›</button><button class="btn" data-act="monthToday">오늘</button>
+      <span class="spacer"></span><span class="muted" style="font-size:12px">날짜를 누르면 일정 추가</span></div>
+    <div class="desk-head">${head}</div><div class="desk-grid">${cells}</div></div>`;
+}
+
 /* ---------- presets ---------- */
 const DURS = [[30,"30분"],[60,"1시간"],[90,"1시간 30분"],[120,"2시간"],[180,"3시간"]];
 const presets = () => all("preset").sort((a,b) => (a.created||0)-(b.created||0));
@@ -809,6 +860,7 @@ function render(){
   document.getElementById("tabs").innerHTML = vis.map(k => `<a href="#${k}" data-v="${k}" class="${k === S.view ? "on" : ""}">${TAB_NAMES[k]}</a>`).join("");
   const view = document.getElementById("view");
   if (S.gate) { view.innerHTML = S.gate; return; }
+  if (S.desk) { view.innerHTML = viewDesk(); return; }
   // keep focus / typed text across re-renders
   const ae = document.activeElement, keep = ae && ae.dataset && ae.dataset.keep;
   const kept = {};
@@ -1012,6 +1064,7 @@ document.getElementById("view").addEventListener("click", e => {
       if (S.weekAdd) { const inp = document.querySelector(`[data-keep="task-${ds}"]`); if (inp) inp.focus(); }
       break;
     }
+    case "deskDay": eventModal(null, ds); break;
     case "ttAdd": courseModal(null); break;
     case "newPreset": presetModal(null); break;
     case "editPreset": presetModal(id); break;
