@@ -185,6 +185,26 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .imp-item{display:flex;gap:8px;align-items:flex-start;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
 .imp-item input{margin-top:3px}
 .ev .cls{white-space:nowrap;flex:none;font-size:10.5px;padding:0 6px;border-radius:999px;background:var(--soft);color:var(--ink2)}
+/* desk text color on transparent wallpaper */
+body.desk[data-ink=light] .desk{--ink:#fff;--ink2:rgba(255,255,255,.9);--muted:rgba(255,255,255,.72);--line:rgba(255,255,255,.35);--sun:#ffc4bf;--sat:#e6edff;--hover:rgba(255,255,255,.18);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+body.desk[data-ink=dark] .desk{--ink:#111;--ink2:#222;--muted:rgba(0,0,0,.6);--line:rgba(0,0,0,.25);--hover:rgba(0,0,0,.08);color:#111;text-shadow:0 1px 2px rgba(255,255,255,.55)}
+body.desk .desk .btn{background:transparent;border-color:var(--line);color:var(--ink);box-shadow:none}
+body.desk .desk .btn:hover{background:var(--hover)}
+.desk .dcell .n,.desk .desk-top h2{color:var(--ink)}
+.desk .dcell.sun .n{color:var(--sun)} .desk .dcell.sat .n{color:var(--sat)}
+.dbar select{border:1px solid var(--line);border-radius:6px;background:var(--input);padding:2px 4px}
+/* desk drag editor */
+.dedit{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.18)}
+.dframe{position:fixed;border:2px dashed var(--accent);border-radius:14px;cursor:move;touch-action:none;background:rgba(255,255,255,.04)}
+.dh{position:absolute;width:18px;height:18px;background:var(--paper);border:2px solid var(--accent);border-radius:50%}
+.dh-n,.dh-s{left:50%;margin-left:-9px;cursor:ns-resize} .dh-n{top:-10px} .dh-s{bottom:-10px}
+.dh-e,.dh-w{top:50%;margin-top:-9px;cursor:ew-resize} .dh-e{right:-10px} .dh-w{left:-10px}
+.dh-ne{top:-10px;right:-10px;cursor:nesw-resize} .dh-sw{bottom:-10px;left:-10px;cursor:nesw-resize}
+.dh-nw{top:-10px;left:-10px;cursor:nwse-resize} .dh-se{bottom:-10px;right:-10px;cursor:nwse-resize}
+.dhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--paper);color:var(--ink2);font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}
+.dbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--paper);padding:8px 12px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;color:var(--ink2)}
+.dbar label{display:flex;align-items:center;gap:6px}
+.dbar input{width:110px}
 /* no color */
 .colors .nocolor{background:var(--paper) !important;border:1.5px dashed var(--muted) !important;position:relative}
 .colors .nocolor::after{content:"";position:absolute;left:3px;right:3px;top:50%;border-top:1.5px solid var(--muted);transform:rotate(-45deg)}
@@ -783,7 +803,7 @@ function importModal(){
 /* ---------- desk (wallpaper) ---------- */
 S.desk = /[?&]desk\b/.test(location.search);
 /* 배경화면 크기·위치: 화면 안 [크기] 버튼으로 조절, 계정에 저장 (주소 옵션 w,h,x,y,a,z가 있으면 그게 우선) */
-const DESK_DEF = {l:10, r:9, t:2, b:9, a:55, z:100}; // 여백(화면 %): 왼쪽 스테이지 매니저·오른쪽 아이콘·아래 Dock 피하기
+const DESK_DEF = {l:10, r:9, t:2, b:9, a:55, z:100, ink:"auto"}; // 여백(화면 %): 왼쪽 스테이지 매니저·오른쪽 아이콘·아래 Dock 피하기
 function deskCfg(){
   let c = {...DESK_DEF};
   try { Object.assign(c, JSON.parse(localStorage.getItem("planner-desk") || "{}")); } catch(_){}
@@ -798,6 +818,7 @@ function applyDesk(c = deskCfg()){
   const cl = v => Math.max(0, Math.min(40, Number(v) || 0));
   const L = cl(c.l), Rr = cl(c.r), T = cl(c.t), B = cl(c.b);
   deskBg.style.opacity = Math.max(0, Math.min(100, c.a)) / 100;
+  document.body.dataset.ink = c.ink || "auto";
   deskStyle.textContent = `
     body.desk{--dz:${16 * (c.z || 100) / 100}px}
     body.desk main,.desk-bg{position:fixed;left:${L}vw;right:${Rr}vw;top:${T}vh;bottom:${B}vh;width:auto;height:auto;
@@ -810,23 +831,64 @@ if (S.desk) {
   applyDesk();
 }
 function deskSizeModal(){
-  const c = deskCfg();
-  const rng = (name, label, min, max, val) => `<div class="field"><label>${label} <b data-out="${name}">${val}%</b></label><input type="range" name="${name}" min="${min}" max="${max}" step="1" value="${val}"></div>`;
-  const f = openModal("배경화면 크기·위치", `
-    <div class="muted" style="font-size:12.5px;margin-bottom:8px">화면 가장자리에서 얼마나 띄울지 정해. 왼쪽은 스테이지 매니저, 오른쪽은 바탕화면 아이콘, 아래는 Dock 자리만큼 비워두면 돼.</div>
-    <div class="row2">${rng("l","왼쪽 여백",0,40,c.l)}${rng("r","오른쪽 여백",0,40,c.r)}</div>
-    <div class="row2">${rng("t","위 여백",0,40,c.t)}${rng("b","아래 여백",0,40,c.b)}</div>
-    ${rng("a","배경 진하기",0,100,c.a)}${rng("z","글씨 크기",60,140,c.z)}
-    <div class="muted" style="font-size:12px">움직이면 바로 미리보기돼. 저장하면 다음에도 유지돼.</div>`,
-    () => {
-      const v = read();
-      try { localStorage.setItem("planner-desk", JSON.stringify(v)); } catch(_){}
-      if (S.col) saveSettings({desk: v});
-    });
-  const read = () => ({l:+f.l.value, r:+f.r.value, t:+f.t.value, b:+f.b.value, a:+f.a.value, z:+f.z.value});
-  const live = () => { f.querySelectorAll("[data-out]").forEach(o => o.textContent = f[o.dataset.out].value + "%"); applyDesk(read()); };
-  f.addEventListener("input", live);
-  modal.querySelector("#mcancel").addEventListener("click", () => applyDesk());
+  if (document.querySelector(".dedit")) return;
+  const orig = deskCfg(), c = {...orig};
+  const cl = (v, max = 60) => Math.max(0, Math.min(max, v));
+  const ov = document.createElement("div"); ov.className = "dedit";
+  ov.innerHTML = `<div class="dframe" data-h="move">
+      ${["n","s","e","w","ne","nw","se","sw"].map(h => `<i class="dh dh-${h}" data-h="${h}"></i>`).join("")}
+      <div class="dhint">드래그해서 옮기고, 모서리·가장자리를 끌어서 크기 조절</div>
+    </div>
+    <div class="dbar">
+      <label>배경 <input type="range" name="a" min="0" max="100" value="${c.a}"></label>
+      <label>글자 <select name="ink"><option value="auto">테마색</option><option value="light">흰색</option><option value="dark">검정</option></select></label>
+      <button class="btn" data-x="clear">완전 투명</button>
+      <label>글씨 <input type="range" name="z" min="60" max="140" value="${c.z}"></label>
+      <button class="btn" data-x="reset">기본값</button><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="save">저장</button>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("[name=ink]").value = c.ink || "auto";
+  const fr = ov.querySelector(".dframe");
+  const draw = () => { Object.assign(fr.style, {left:c.l+"vw", right:c.r+"vw", top:c.t+"vh", bottom:c.b+"vh"}); applyDesk(c); };
+  draw();
+  let drag = null;
+  fr.addEventListener("pointerdown", e => {
+    const h = e.target.dataset.h; if (!h) return;
+    e.preventDefault(); fr.setPointerCapture(e.pointerId);
+    drag = {h, x:e.clientX, y:e.clientY, s:{...c}};
+  });
+  fr.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = (e.clientX - drag.x) / innerWidth * 100, dy = (e.clientY - drag.y) / innerHeight * 100, s0 = drag.s, h = drag.h;
+    const MINW = 25, MINH = 25;
+    if (h === "move") {
+      const mx = Math.max(-s0.l, Math.min(s0.r, dx)), my = Math.max(-s0.t, Math.min(s0.b, dy));
+      c.l = s0.l + mx; c.r = s0.r - mx; c.t = s0.t + my; c.b = s0.b - my;
+    } else {
+      if (h.includes("w")) c.l = cl(Math.min(s0.l + dx, 100 - s0.r - MINW));
+      if (h.includes("e")) c.r = cl(Math.min(s0.r - dx, 100 - s0.l - MINW));
+      if (h.includes("n")) c.t = cl(Math.min(s0.t + dy, 100 - s0.b - MINH));
+      if (h.includes("s")) c.b = cl(Math.min(s0.b - dy, 100 - s0.t - MINH));
+    }
+    for (const k of ["l","r","t","b"]) c[k] = Math.round(c[k] * 10) / 10;
+    draw();
+  });
+  const end = () => { drag = null; };
+  fr.addEventListener("pointerup", end); fr.addEventListener("pointercancel", end);
+  ov.querySelector(".dbar").addEventListener("input", e => { const t = e.target; c[t.name] = t.name === "ink" ? t.value : +t.value; draw(); });
+  ov.querySelector(".dbar").addEventListener("change", e => { if (e.target.name === "ink") { c.ink = e.target.value; draw(); } });
+  ov.querySelector(".dbar").addEventListener("click", e => {
+    const x = e.target.dataset.x; if (!x) return;
+    const sync = () => { ov.querySelector("[name=a]").value = c.a; ov.querySelector("[name=z]").value = c.z; ov.querySelector("[name=ink]").value = c.ink; };
+    if (x === "reset") { Object.assign(c, DESK_DEF); sync(); draw(); return; }
+    if (x === "clear") { c.a = 0; if (c.ink === "auto") c.ink = "light"; sync(); draw(); return; }
+    if (x === "save") {
+      try { localStorage.setItem("planner-desk", JSON.stringify(c)); } catch(_){}
+      if (S.col) saveSettings({desk: {...c}});
+      applyDesk(c);
+    } else applyDesk(orig);
+    ov.remove();
+  });
 }
 function viewDesk(){
   const m = S.month, y = m.getFullYear(), mo = m.getMonth();
