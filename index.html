@@ -57,7 +57,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .brand .today{color:var(--muted);font-size:13px;margin-top:2px}
 .status{font-size:12px;color:var(--muted)}
 .status.warn{color:var(--warn)}
-nav.tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:999px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;max-width:100%;background:var(--soft);padding:4px;border-radius:999px}
 nav.tabs a{padding:7px 16px;border-radius:999px;text-decoration:none;color:var(--ink2);font-weight:500;font-size:14px;white-space:nowrap}
 nav.tabs a.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r)}
@@ -163,6 +163,26 @@ form.add select{border:1px solid var(--line);border-radius:8px;background:var(--
 .group-label{font-size:12px;color:var(--ink2);font-weight:600;margin:12px 0 2px;padding-left:4px}
 details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top:14px}
 
+/* timetable */
+.tt-wrap{overflow-x:auto}
+.tt{display:grid;position:relative;min-width:520px}
+.tt-head{font-size:12.5px;font-weight:600;color:var(--muted);text-align:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.tt-hours{position:relative;border-right:1px solid var(--line)}
+.tt-hour{position:absolute;right:6px;font-size:11px;color:var(--muted);transform:translateY(-1px)}
+.tt-col{position:relative;border-right:1px solid var(--line);cursor:pointer}
+.tt-col:last-child{border-right:0}
+.tt-line{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.tt-line.half{border-top-style:dashed;opacity:.5}
+.tt-block{position:absolute;left:2px;right:2px;border-radius:6px;padding:4px 5px;overflow:hidden;cursor:pointer;color:#1d1d1f;line-height:1.25}
+.tt-block b{display:block;font-size:12px;font-weight:600;word-break:keep-all}
+.tt-block span{display:block;font-size:10.5px;opacity:.75}
+.tt-col.today{background:var(--today-row)}
+.slot-row{display:grid;grid-template-columns:70px 1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center}
+.slot-row select,.slot-row input{border:1px solid var(--line);border-radius:8px;padding:7px 6px;background:var(--input);width:100%}
+.imp-list{max-height:300px;overflow:auto;margin:6px 0}
+.imp-item{display:flex;gap:8px;align-items:flex-start;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
+.imp-item input{margin-top:3px}
+.ev .cls{font-size:10.5px;padding:0 6px;border-radius:999px;background:var(--soft);color:var(--ink2)}
 /* theme picker */
 .themes{display:flex;gap:6px;align-items:center}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
@@ -202,6 +222,7 @@ html{color-scheme:light}
       <a href="#week" data-v="week">주간</a>
       <a href="#today" data-v="today">일별</a>
       <a href="#checklist" data-v="checklist">체크리스트</a>
+      <a href="#timetable" data-v="timetable">시간표</a>
     </nav>
   </header>
   <div style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><div class="themes" id="themes"></div><button class="mini" data-act="logout">로그아웃</button></div>
@@ -363,7 +384,8 @@ function dayDetail(ds, withHeader = true){
   return `${withHeader ? `<h3>${fmtMD(ds)}</h3><div class="muted" style="font-size:13px">${ds === S.today ? "오늘" : ""}</div>` : ""}
   <div class="sects"><div class="sect">
     <div class="sect-title">일정 <span class="spacer"></span><button class="mini" data-act="newEvent" data-date="${ds}">+ 일정 추가</button></div>
-    ${evs.length ? `<ul class="list">${evs.map(e => eventRow(e, ds)).join("")}</ul>` : `<div class="empty">일정 없음</div>`}
+    ${(() => { const cl = classesOn(ds); return cl.length ? `<ul class="list">${cl.map(classRow).join("")}</ul>` : ""; })()}
+    ${evs.length ? `<ul class="list">${evs.map(e => eventRow(e, ds)).join("")}</ul>` : (classesOn(ds).length ? "" : `<div class="empty">일정 없음</div>`)}
   </div>
   <div class="sect">
     <div class="sect-title">할 일 ${ts.length ? `<span class="badge g">${done}/${ts.length}</span>` : ""}</div>
@@ -505,6 +527,174 @@ function viewChecklist(){
   <datalist id="groupList">${groups.map(g => `<option value="${esc(g)}">`).join("")}</datalist>`;
 }
 
+/* ---------- timetable ---------- */
+const TT_COLORS = ["#f7c6c5","#fcd9a8","#fbeaa0","#cdeac0","#bfe3e0","#c5d8f7","#d9cdf2","#f2c8e2","#e1d5c9","#d3d8de"];
+const TT_DAYS = [1,2,3,4,5,6,0]; // 월..일
+const DAY_KO = {"월":1,"화":2,"수":3,"목":4,"금":5,"토":6,"일":0};
+const toMin = t => { const [h,m] = String(t).split(":").map(Number); return h*60 + (m||0); };
+const toHM = m => pad(Math.floor(m/60)) + ":" + pad(m%60);
+const courses = () => all("course").sort((a,b) => (a.created||0)-(b.created||0));
+function classesOn(ds){
+  const dow = parse(ds).getDay(), out = [];
+  for (const c of courses()) for (const sl of (c.slots||[])) if (sl.day === dow) out.push({id:c.id, name:c.name, room:c.room, color:c.color, start:sl.start, end:sl.end});
+  return out.sort((a,b) => toMin(a.start) - toMin(b.start));
+}
+const classRow = c => `<li class="ev" data-act="editCourse" data-id="${c.id}"><span class="dot" style="background:${esc(c.color)}"></span><span class="time">${esc(c.start)}</span><span class="ttl">${esc(c.name)}</span>${c.room ? `<span class="range">${esc(c.room)}</span>` : ""}<span class="cls">수업</span></li>`;
+
+function viewTimetable(){
+  const cs = courses();
+  const slots = cs.flatMap(c => (c.slots||[]).map(sl => ({c, sl})));
+  const days = TT_DAYS.filter(d => d >= 1 && d <= 5 || slots.some(x => x.sl.day === d));
+  let startH = 9, endH = 18;
+  for (const {sl} of slots) { startH = Math.min(startH, Math.floor(toMin(sl.start)/60)); endH = Math.max(endH, Math.ceil(toMin(sl.end)/60)); }
+  const RH = 54, H = (endH - startH) * RH, todayDow = new Date().getDay();
+  const lines = Array.from({length: endH - startH}, (_, i) => `<div class="tt-line" style="top:${i*RH}px"></div><div class="tt-line half" style="top:${i*RH + RH/2}px"></div>`).join("");
+  const hours = Array.from({length: endH - startH}, (_, i) => `<span class="tt-hour" style="top:${i*RH + 3}px">${startH + i}</span>`).join("");
+  const cols = days.map(d => {
+    const blocks = slots.filter(x => x.sl.day === d).map(({c, sl}) => {
+      const top = (toMin(sl.start) - startH*60) / 60 * RH, h = Math.max(18, (toMin(sl.end) - toMin(sl.start)) / 60 * RH);
+      return `<div class="tt-block" data-act="editCourse" data-id="${c.id}" style="top:${top}px;height:${h-2}px;background:${esc(c.color||TT_COLORS[0])}"><b>${esc(c.name)}</b>${c.room ? `<span>${esc(c.room)}</span>` : ""}${h > 60 && c.prof ? `<span>${esc(c.prof)}</span>` : ""}</div>`;
+    }).join("");
+    return `<div class="tt-col ${d === todayDow ? "today" : ""}" data-act="ttNew" data-day="${d}" data-start="${startH}" data-rh="${RH}" style="height:${H}px">${lines}${blocks}</div>`;
+  }).join("");
+  return `<div class="bar"><h2>시간표</h2><span class="spacer"></span>
+      <button class="btn" data-act="ttImport">이미지로 불러오기</button>
+      <button class="btn primary" data-act="ttAdd">+ 수업</button></div>
+    <div class="card tt-wrap">
+      <div class="tt" style="grid-template-columns:34px repeat(${days.length},1fr)">
+        <div class="tt-head"></div>${days.map(d => `<div class="tt-head">${WD[d]}</div>`).join("")}
+        <div class="tt-hours" style="height:${H}px">${hours}</div>${cols}
+      </div>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+      <span>빈 칸을 누르면 그 시간에 수업 추가 · 수업을 누르면 수정</span><span class="spacer"></span>
+      ${cs.length ? `<button class="mini" data-act="ttClear">시간표 전체 지우기</button>` : ""}
+    </div>`;
+}
+
+function slotRowHTML(sl){
+  return `<div class="slot-row">
+    <select name="day">${TT_DAYS.map(d => `<option value="${d}" ${d === sl.day ? "selected" : ""}>${WD[d]}</option>`).join("")}</select>
+    <input type="time" name="start" value="${esc(sl.start)}" step="300">
+    <input type="time" name="end" value="${esc(sl.end)}" step="300">
+    <button type="button" class="mini" data-rm aria-label="이 시간 삭제">✕</button></div>`;
+}
+function courseModal(id, preset){
+  const used = courses().map(c => c.color);
+  const c = id ? {id, ...S.items.get(id)} : {name:"", room:"", prof:"", color: TT_COLORS.find(x => !used.includes(x)) || TT_COLORS[0], slots:[preset || {day:1, start:"09:00", end:"10:15"}]};
+  const f = openModal(id ? "수업 수정" : "수업 추가", `
+    <div class="field"><label>과목명</label><input name="title" value="${esc(c.name)}" placeholder="예: 세계연극사" required></div>
+    <div class="row2">
+      <div class="field"><label>강의실</label><input name="room" value="${esc(c.room||"")}" placeholder="예: 301관 501호"></div>
+      <div class="field"><label>교수</label><input name="prof" value="${esc(c.prof||"")}"></div>
+    </div>
+    <div class="field"><label>시간 (요일 · 시작 · 끝)</label><div id="slots">${(c.slots||[]).map(slotRowHTML).join("")}</div>
+      <button type="button" class="mini" id="addSlot" style="align-self:flex-start">+ 시간 추가</button></div>
+    <div class="field"><label>색상</label><div class="colors">${TT_COLORS.map(x => `<button type="button" data-color="${x}" class="${x===c.color?"on":""}" style="background:${x}" aria-label="색상"></button>`).join("")}</div><input type="hidden" name="color" value="${c.color}"></div>`,
+    f => {
+      const name = f.title.value.trim(); if (!name) return "과목명을 적어줘.";
+      const slots = [...f.querySelectorAll(".slot-row")].map(r => ({day:Number(r.querySelector("[name=day]").value), start:r.querySelector("[name=start]").value, end:r.querySelector("[name=end]").value}));
+      if (!slots.length) return "시간을 하나 이상 넣어줘.";
+      if (slots.some(x => !x.start || !x.end || toMin(x.end) <= toMin(x.start))) return "끝나는 시간이 시작보다 늦어야 해.";
+      save(id || uid("cs"), {kind:"course", name, room:f.room.value.trim(), prof:f.prof.value.trim(), color:f.color.value, slots, created:c.created || Date.now()});
+    },
+    id ? () => removeItem(id) : null);
+  wireColors(f);
+  const box = f.querySelector("#slots");
+  f.querySelector("#addSlot").onclick = () => { const last = [...box.querySelectorAll(".slot-row")].pop(); const d = last ? Number(last.querySelector("[name=day]").value) : 1;
+    box.insertAdjacentHTML("beforeend", slotRowHTML({day: d === 5 ? 1 : (d % 6) + 1, start: last ? last.querySelector("[name=start]").value : "09:00", end: last ? last.querySelector("[name=end]").value : "10:15"})); };
+  box.addEventListener("click", e => { if (e.target.closest("[data-rm]")) e.target.closest(".slot-row").remove(); });
+}
+
+/* 에브리타임 캡처 → Gemini로 인식 */
+function downscale(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const cv = document.createElement("canvas"); cv.width = Math.round(img.width*k); cv.height = Math.round(img.height*k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+      res(cv.toDataURL("image/jpeg", 0.9).split(",")[1]);
+    };
+    img.onerror = () => rej(new Error("이미지를 읽지 못했어"));
+    img.src = url;
+  });
+}
+const TT_PROMPT = `이 이미지는 한국 대학생 시간표 앱 '에브리타임'의 시간표 캡처야.
+가로축은 요일(월 화 수 목 금, 가끔 토 일), 세로축 왼쪽 숫자는 시각(9, 10, 11, 12, 1(=13시), 2(=14시) ... 오후 시각은 24시간제로 바꿔)이야.
+각 색깔 칸이 수업 하나야. 칸 안에는 과목명, 그 아래 강의실(또는 교수명)이 적혀 있어.
+칸의 위쪽 끝과 아래쪽 끝 위치를 세로축 눈금과 정확히 비교해서 시작·끝 시각을 5분 단위로 계산해.
+같은 과목이 여러 요일에 있으면 slots에 모두 넣어. 과목명 글자는 이미지에 보이는 그대로 적어.
+반드시 이 JSON 형식으로만 답해:
+{"courses":[{"name":"과목명","room":"강의실 또는 빈 문자열","slots":[{"day":"월","start":"HH:MM","end":"HH:MM"}]}]}`;
+async function recognizeTimetable(b64){
+  if (!FBX || !FBX.app) throw new Error("로그인 후에 쓸 수 있어");
+  const AI = await import(FB + "firebase-ai.js");
+  const ai = AI.getAI(FBX.app, {backend: new AI.GoogleAIBackend()});
+  let lastErr;
+  for (const model of ["gemini-2.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash-lite"]) {
+    try {
+      const m = AI.getGenerativeModel(ai, {model, generationConfig:{responseMimeType:"application/json", temperature:0}});
+      const r = await m.generateContent([TT_PROMPT, {inlineData:{data:b64, mimeType:"image/jpeg"}}]);
+      const txt = r.response.text().replace(/^```json|```$/g, "").trim();
+      const data = JSON.parse(txt);
+      return (data.courses || []).map(c => ({
+        name: String(c.name||"").trim(), room: String(c.room||"").trim(),
+        slots: (c.slots||[]).map(x => ({day: DAY_KO[x.day] ?? Number(x.day), start: String(x.start).slice(0,5), end: String(x.end).slice(0,5)}))
+          .filter(x => x.day >= 0 && x.day <= 6 && /^\d\d:\d\d$/.test(x.start) && /^\d\d:\d\d$/.test(x.end) && toMin(x.end) > toMin(x.start))
+      })).filter(c => c.name && c.slots.length);
+    } catch (e) {
+      lastErr = e; console.warn(model, e);
+      if (!/not found|404|not supported|unavailable|NOT_FOUND/i.test(String(e && (e.message||e)))) break;
+    }
+  }
+  throw lastErr;
+}
+function importModal(){
+  modal.innerHTML = `<h3>에브리타임 시간표 불러오기</h3>
+    <div class="muted" style="font-size:13px">에브리타임 시간표 화면을 캡처해서 올려줘. AI가 읽어서 수업을 채워줘. 결과는 저장 전에 확인할 수 있어.</div>
+    <div class="field" style="margin-top:12px"><input type="file" id="ttFile" accept="image/*"></div>
+    <div id="impBody"></div><div class="err" id="merr"></div>
+    <div class="modal-foot"><span class="spacer"></span><button type="button" class="btn" id="mcancel">닫기</button><button type="button" class="btn primary" id="impSave" style="display:none">선택한 수업 추가</button></div>`;
+  overlay.classList.add("open");
+  modal.querySelector("#mcancel").onclick = closeModal;
+  let found = [];
+  modal.querySelector("#ttFile").onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const body = modal.querySelector("#impBody"), err = modal.querySelector("#merr"), saveBtn = modal.querySelector("#impSave");
+    err.textContent = ""; saveBtn.style.display = "none";
+    body.innerHTML = `<div class="muted" style="padding:14px 0;font-size:13px">시간표 읽는 중… (10~20초)</div>`;
+    try {
+      found = await recognizeTimetable(await downscale(file));
+      if (!found.length) { body.innerHTML = ""; err.textContent = "수업을 찾지 못했어. 시간표 부분만 잘라서 다시 올려봐."; return; }
+      body.innerHTML = `<div class="imp-list">${found.map((c,i) => `<label class="imp-item"><input type="checkbox" data-i="${i}" checked>
+        <div><b>${esc(c.name)}</b>${c.room ? ` <span class="muted">· ${esc(c.room)}</span>` : ""}<div class="muted" style="font-size:12.5px">${c.slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ")}</div></div></label>`).join("")}</div>
+        ${courses().length ? `<label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="impReplace"> 기존 시간표 지우고 바꾸기</label>` : ""}
+        <div class="muted" style="font-size:12px;margin-top:6px">틀린 부분은 추가한 다음 수업을 눌러서 고치면 돼.</div>`;
+      saveBtn.style.display = "";
+    } catch (ex) {
+      console.error(ex); body.innerHTML = "";
+      const msg = String(ex && (ex.message || ex));
+      err.textContent = /api-not-enabled|not been used|disabled|PERMISSION_DENIED|403/i.test(msg)
+        ? "Firebase에서 AI Logic(Gemini)이 아직 켜져 있지 않아. 설정한 다음 다시 해줘."
+        : "인식에 실패했어: " + msg.slice(0, 160);
+    }
+  };
+  modal.querySelector("#impSave").onclick = () => {
+    const pick = [...modal.querySelectorAll(".imp-item input:checked")].map(x => found[Number(x.dataset.i)]);
+    const rep = modal.querySelector("#impReplace");
+    if (rep && rep.checked) courses().forEach(c => removeItem(c.id));
+    const used = rep && rep.checked ? [] : courses().map(c => c.color);
+    let ci = 0;
+    pick.forEach((c, i) => {
+      while (used.includes(TT_COLORS[ci % TT_COLORS.length]) && ci < used.length + TT_COLORS.length) ci++;
+      const color = TT_COLORS[ci++ % TT_COLORS.length];
+      save(uid("cs"), {kind:"course", name:c.name, room:c.room, prof:"", color, slots:c.slots, created:Date.now()+i});
+    });
+    closeModal();
+  };
+}
+
 /* ---------- theme ---------- */
 const THEMES = [["rose","#fadbd8","로즈"],["white","#ffffff","화이트"],["black","#000000","블랙"],["sky","#bbcbd2","블루그레이"],["butter","#fad892","버터"],["navy","#081a2e","네이비"]];
 function applyTheme(t){
@@ -534,7 +724,7 @@ function render(){
   const kept = {};
   view.querySelectorAll("[data-keep]").forEach(el => { if (el.value) kept[el.dataset.keep] = el.value; });
   const sel = keep ? [ae.selectionStart, ae.selectionEnd] : null;
-  view.innerHTML = S.view === "week" ? viewWeek() : S.view === "today" ? viewToday() : S.view === "checklist" ? viewChecklist() : viewMonth();
+  view.innerHTML = S.view === "week" ? viewWeek() : S.view === "today" ? viewToday() : S.view === "checklist" ? viewChecklist() : S.view === "timetable" ? viewTimetable() : viewMonth();
   view.querySelectorAll("[data-keep]").forEach(el => { if (kept[el.dataset.keep]) el.value = kept[el.dataset.keep]; });
   if (keep) { const el = view.querySelector(`[data-keep="${CSS.escape(keep)}"]`); if (el) { el.focus(); try { el.setSelectionRange(...sel); } catch(_){} } }
 }
@@ -542,7 +732,7 @@ function render(){
 /* ---------- routing ---------- */
 function route(){
   const h = location.hash.replace("#","");
-  S.view = ["month","week","today","checklist"].includes(h) ? h : "month";
+  S.view = ["month","week","today","checklist","timetable"].includes(h) ? h : "month";
   render();
 }
 window.addEventListener("hashchange", route);
@@ -680,6 +870,19 @@ document.getElementById("view").addEventListener("click", e => {
     case "toggleCheck": toggleCheck(id); break;
     case "editCheck": checkModal(id); break;
     case "newCheck": checkModal(null); break;
+    case "ttAdd": courseModal(null); break;
+    case "ttImport": importModal(); break;
+    case "editCourse": e.stopPropagation(); courseModal(id); break;
+    case "ttNew": {
+      const r = el.getBoundingClientRect(), y = e.clientY - r.top;
+      const m = Number(el.dataset.start)*60 + Math.floor(y / Number(el.dataset.rh) * 2) * 30;
+      courseModal(null, {day:Number(el.dataset.day), start:toHM(m), end:toHM(m+75)}); break;
+    }
+    case "ttClear": {
+      if (el.dataset.sure) courses().forEach(c => removeItem(c.id));
+      else { el.dataset.sure = 1; el.textContent = "정말 다 지울까? 한 번 더 누르면 삭제"; }
+      break;
+    }
     case "clearDone": all("check").filter(it => !isRoutine(it) && it.done).forEach(it => removeItem(it.id)); break;
   }
 });
@@ -712,7 +915,7 @@ const firebaseConfig = {
   appId: "1:70445908195:web:989ce840b55dd3b26f45d6"
 };
 // ▲▲▲ ------------------------------------- ▲▲▲
-const FB = "https://www.gstatic.com/firebasejs/10.12.2/";
+const FB = "https://www.gstatic.com/firebasejs/11.10.0/";
 const gate = (title, body, btn) => `<div class="card panel" style="max-width:420px;margin:40px auto;text-align:center">
   <h3 style="margin-bottom:8px">${title}</h3><div class="muted" style="font-size:14px">${body}</div>
   ${btn ? `<div style="margin-top:16px"><button class="btn primary" data-act="${btn[0]}">${btn[1]}</button></div>` : ""}</div>`;
@@ -753,7 +956,7 @@ route();
     let fs;
     try { fs = F.initializeFirestore(app, {localCache: F.persistentLocalCache({tabManager: F.persistentMultipleTabManager()})}); }
     catch (_) { fs = F.getFirestore(app); }
-    FBX = {auth, A};
+    FBX = {auth, A, app};
     let unsub = null;
     A.onAuthStateChanged(auth, u => {
       if (unsub) { unsub(); unsub = null; }
