@@ -185,6 +185,12 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .imp-item{display:flex;gap:8px;align-items:flex-start;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
 .imp-item input{margin-top:3px}
 .ev .cls{white-space:nowrap;flex:none;font-size:10.5px;padding:0 6px;border-radius:999px;background:var(--soft);color:var(--ink2)}
+/* no color */
+.colors .nocolor{background:var(--paper) !important;border:1.5px dashed var(--muted) !important;position:relative}
+.colors .nocolor::after{content:"";position:absolute;left:3px;right:3px;top:50%;border-top:1.5px solid var(--muted);transform:rotate(-45deg)}
+.chip.plain{color:var(--ink);padding-left:2px}
+.dot.plain,.dline i.plain,.pchip i.plain,.pcard .sw.plain{background:transparent !important;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.dline i.plain{display:none}
 /* past events + celebration */
 .ev.past .ttl,.ev.past .time{text-decoration:line-through;color:var(--muted)}
 .ev.past .dot{opacity:.45}
@@ -223,7 +229,7 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
 .desk-head .sun{color:var(--sun)} .desk-head .sat{color:var(--sat)}
 .desk-grid{flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
 .dcell{border-top:1px solid var(--line);padding:.4em .45em;overflow:hidden;cursor:pointer;min-width:0;border-radius:6px}
-.dcell:hover{background:var(--hover)}
+.dcell:hover{background:color-mix(in srgb, var(--hover) 55%, transparent)}
 .dcell .n{font-size:.8em;font-weight:600}
 .dcell.out .n{opacity:.4}
 .dcell.sun .n{color:var(--sun)} .dcell.sat .n{color:var(--sat)}
@@ -428,6 +434,11 @@ function eventPast(e){
 }
 const classPast = c => c.ds + " " + c.end <= nowKey();
 
+/* 색 없음(투명) 지원 */
+const NOCOLOR = "none";
+const bgOf = c => c === NOCOLOR ? "transparent" : (c || COLORS[0]);
+const plain = c => c === NOCOLOR ? "plain" : "";
+
 /* ---------- render pieces ---------- */
 function taskRow(t, opts = {}){
   const late = !t.done && t.origDate && t.origDate < t.date ? diffDays(t.date, t.origDate) : 0;
@@ -442,7 +453,7 @@ function eventRow(e, ds){
   const multi = e.endDate && e.endDate > e.date;
   const time = e.time ? e.time + (e.endTime ? "–" + e.endTime : "") : (multi ? "" : "종일");
   return `<li class="ev ${eventPast(e) ? "past" : ""}" data-act="editEvent" data-id="${e.id}">
-    <span class="dot" style="background:${esc(e.color||COLORS[0])}"></span>
+    <span class="dot ${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></span>
     ${time ? `<span class="time">${esc(time)}</span>` : ""}
     <span class="ttl">${esc(e.title)}</span>
     ${multi ? `<span class="range">${parse(e.date).getMonth()+1}/${parse(e.date).getDate()}–${parse(e.endDate).getMonth()+1}/${parse(e.endDate).getDate()}</span>` : ""}
@@ -482,7 +493,7 @@ function viewMonth(){
     cells += `<div class="${cls}" data-act="selDate" data-date="${ds}">
       <span class="num">${d.getDate()}</span>
       ${ts.length ? `<span class="tcount ${done === ts.length ? "all" : ""}">✓${done}/${ts.length}</span>` : ""}
-      ${evs.slice(0,3).map(e => `<div class="chip ${eventPast(e) ? "past" : ""}" style="background:${esc(e.color||COLORS[0])}">${e.time ? esc(e.time)+" " : ""}${esc(e.title)}</div>`).join("")}
+      ${evs.slice(0,3).map(e => `<div class="chip ${eventPast(e) ? "past" : ""} ${plain(e.color)}" style="background:${esc(bgOf(e.color))}">${e.time ? esc(e.time)+" " : ""}${esc(e.title)}</div>`).join("")}
       ${evs.length > 3 ? `<div class="more">+${evs.length-3}</div>` : ""}
     </div>`;
   }
@@ -771,22 +782,51 @@ function importModal(){
 
 /* ---------- desk (wallpaper) ---------- */
 S.desk = /[?&]desk\b/.test(location.search);
+/* 배경화면 크기·위치: 화면 안 [크기] 버튼으로 조절, 계정에 저장 (주소 옵션 w,h,x,y,a,z가 있으면 그게 우선) */
+const DESK_DEF = {l:10, r:9, t:2, b:9, a:55, z:100}; // 여백(화면 %): 왼쪽 스테이지 매니저·오른쪽 아이콘·아래 Dock 피하기
+function deskCfg(){
+  let c = {...DESK_DEF};
+  try { Object.assign(c, JSON.parse(localStorage.getItem("planner-desk") || "{}")); } catch(_){}
+  if (settingsDocSafe().desk) Object.assign(c, settingsDocSafe().desk);
+  const q = k => (location.search.match(new RegExp("[?&]" + k + "=([\\w.]+)")) || [])[1];
+  for (const k of ["l","r","t","b","a","z"]) if (q(k)) c[k] = Number(q(k));
+  return c;
+}
+const settingsDocSafe = () => (S.items && S.items.get("settings")) || {};
+let deskStyle = null, deskBg = null;
+function applyDesk(c = deskCfg()){
+  const cl = v => Math.max(0, Math.min(40, Number(v) || 0));
+  const L = cl(c.l), Rr = cl(c.r), T = cl(c.t), B = cl(c.b);
+  deskBg.style.opacity = Math.max(0, Math.min(100, c.a)) / 100;
+  deskStyle.textContent = `
+    body.desk{--dz:${16 * (c.z || 100) / 100}px}
+    body.desk main,.desk-bg{position:fixed;left:${L}vw;right:${Rr}vw;top:${T}vh;bottom:${B}vh;width:auto;height:auto;
+      ${L || Rr || T || B ? "border-radius:14px;overflow:hidden" : ""}}`;
+}
 if (S.desk) {
   document.documentElement.classList.add("desk"); document.body.classList.add("desk");
-  const a = Number((location.search.match(/[?&]a=(\d+)/) || [])[1] ?? 55);
-  const bg = document.createElement("div"); bg.className = "desk-bg"; bg.style.opacity = Math.max(0, Math.min(100, a)) / 100;
-  document.body.prepend(bg);
-  // 크기·위치: z=글씨크기(%), w=너비(%), h=높이(%), x=left|center|right, y=top|center|bottom
-  const q = k => (location.search.match(new RegExp("[?&]" + k + "=([\\w.]+)")) || [])[1];
-  const z = Number(q("z")), W = Math.min(100, Number(q("w")) || 100), H = Math.min(100, Number(q("h")) || 100);
-  const st = document.createElement("style");
-  st.textContent = `
-    ${z ? `body.desk{--dz:${16*z/100}px}` : ""}
-    body.desk main,.desk-bg{position:fixed;width:${W}vw;height:${H}vh;
-      left:${({left:"0", right:(100-W)+"vw"})[q("x")] ?? ((100-W)/2)+"vw"};
-      top:${({top:"0", bottom:(100-H)+"vh"})[q("y")] ?? ((100-H)/2)+"vh"};
-      ${W < 100 || H < 100 ? "border-radius:14px;overflow:hidden" : ""}}`;
-  document.head.appendChild(st);
+  deskBg = document.createElement("div"); deskBg.className = "desk-bg"; document.body.prepend(deskBg);
+  deskStyle = document.createElement("style"); document.head.appendChild(deskStyle);
+  applyDesk();
+}
+function deskSizeModal(){
+  const c = deskCfg();
+  const rng = (name, label, min, max, val) => `<div class="field"><label>${label} <b data-out="${name}">${val}%</b></label><input type="range" name="${name}" min="${min}" max="${max}" step="1" value="${val}"></div>`;
+  const f = openModal("배경화면 크기·위치", `
+    <div class="muted" style="font-size:12.5px;margin-bottom:8px">화면 가장자리에서 얼마나 띄울지 정해. 왼쪽은 스테이지 매니저, 오른쪽은 바탕화면 아이콘, 아래는 Dock 자리만큼 비워두면 돼.</div>
+    <div class="row2">${rng("l","왼쪽 여백",0,40,c.l)}${rng("r","오른쪽 여백",0,40,c.r)}</div>
+    <div class="row2">${rng("t","위 여백",0,40,c.t)}${rng("b","아래 여백",0,40,c.b)}</div>
+    ${rng("a","배경 진하기",0,100,c.a)}${rng("z","글씨 크기",60,140,c.z)}
+    <div class="muted" style="font-size:12px">움직이면 바로 미리보기돼. 저장하면 다음에도 유지돼.</div>`,
+    () => {
+      const v = read();
+      try { localStorage.setItem("planner-desk", JSON.stringify(v)); } catch(_){}
+      if (S.col) saveSettings({desk: v});
+    });
+  const read = () => ({l:+f.l.value, r:+f.r.value, t:+f.t.value, b:+f.b.value, a:+f.a.value, z:+f.z.value});
+  const live = () => { f.querySelectorAll("[data-out]").forEach(o => o.textContent = f[o.dataset.out].value + "%"); applyDesk(read()); };
+  f.addEventListener("input", live);
+  modal.querySelector("#mcancel").addEventListener("click", () => applyDesk());
 }
 function viewDesk(){
   const m = S.month, y = m.getFullYear(), mo = m.getMonth();
@@ -796,7 +836,7 @@ function viewDesk(){
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const ds = ymd(d), dow = d.getDay();
     const evs = eventsOn(ds), ts = tasksOn(ds);
-    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i style="background:${esc(e.color||COLORS[0])}"></i>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</div>`).join("")
+    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</div>`).join("")
       + ts.map(t => `<div class="dline task ${t.done ? "done" : ""}">${t.done ? "☑" : "☐"} ${esc(t.title)}</div>`).join("");
     cells += `<div class="dcell ${d.getMonth() !== mo ? "out" : ""} ${dow===0?"sun":dow===6?"sat":""} ${ds===S.today?"is-today":""}" data-act="deskDay" data-date="${ds}">
       <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}</div>${lines}</div>`;
@@ -805,7 +845,7 @@ function viewDesk(){
   return `<div class="desk">
     <div class="desk-top"><h2>${y}년 ${mo+1}월</h2>
       <button class="btn icon" data-act="monthPrev">‹</button><button class="btn icon" data-act="monthNext">›</button><button class="btn" data-act="monthToday">오늘</button>
-      <span class="spacer"></span><span class="muted" style="font-size:12px">날짜를 누르면 일정 추가</span></div>
+      <span class="spacer"></span><span class="muted" style="font-size:.75em">날짜를 누르면 일정 추가</span><button class="btn" data-act="deskSize">크기</button></div>
     <div class="desk-head">${head}</div><div class="desk-grid">${cells}</div></div>`;
 }
 
@@ -840,13 +880,13 @@ const presets = () => all("preset").sort((a,b) => (a.created||0)-(b.created||0))
 const durLabel = m => m % 60 ? (m >= 60 ? `${Math.floor(m/60)}시간 ${m%60}분` : `${m}분`) : `${m/60}시간`;
 function presetChips(ds){
   const ps = presets(); if (!ps.length) return "";
-  return `<div class="presets">${ps.map(p => `<button class="pchip" data-act="usePreset" data-id="${p.id}" data-date="${ds}"><i style="background:${esc(p.color)}"></i>${esc(p.name)}</button>`).join("")}</div>`;
+  return `<div class="presets">${ps.map(p => `<button class="pchip" data-act="usePreset" data-id="${p.id}" data-date="${ds}"><i class="${plain(p.color)}" style="background:${esc(bgOf(p.color))}"></i>${esc(p.name)}</button>`).join("")}</div>`;
 }
 function viewPresets(){
   const ps = presets();
   return `<div class="day-wrap"><div class="bar"><h2>프리셋</h2><span class="spacer"></span><button class="btn primary" data-act="newPreset">+ 프리셋</button></div>
     <div class="card panel">
-      ${ps.length ? ps.map(p => `<div class="pcard" data-act="editPreset" data-id="${p.id}"><span class="sw" style="background:${esc(p.color)}"></span><span class="nm">${esc(p.name)}</span>
+      ${ps.length ? ps.map(p => `<div class="pcard" data-act="editPreset" data-id="${p.id}"><span class="sw ${plain(p.color)}" style="background:${esc(bgOf(p.color))}"></span><span class="nm">${esc(p.name)}</span>
         <span class="badge n">${durLabel(p.dur)}</span>${p.defTime ? `<span class="badge g">${esc(p.defTime)} 시작</span>` : ""}</div>`).join("")
       : `<div class="empty">자주 넣는 일정(PT, 알바, 스터디 …)을 프리셋으로 만들어두면, 할 일 추가 칸 아래 버튼으로 날짜와 시간만 골라서 바로 넣을 수 있어.</div>`}
     </div>
@@ -1008,7 +1048,7 @@ function openModal(title, body, onSave, onDelete){
   return f;
 }
 function colorPicker(cur){
-  return `<div class="field"><label>색상</label><div class="colors">${COLORS.map(c => `<button type="button" data-color="${c}" class="${c===cur?"on":""}" style="background:${c}" aria-label="색상"></button>`).join("")}</div><input type="hidden" name="color" value="${cur}"></div>`;
+  return `<div class="field"><label>색상</label><div class="colors">${COLORS.map(c => `<button type="button" data-color="${c}" class="${c===cur?"on":""}" style="background:${c}" aria-label="색상"></button>`).join("")}<button type="button" data-color="${NOCOLOR}" class="nocolor ${cur===NOCOLOR?"on":""}" title="색 없음 (글씨만)" aria-label="색 없음"></button></div><input type="hidden" name="color" value="${cur}"></div>`;
 }
 function wireColors(f){
   f.querySelectorAll("[data-color]").forEach(b => b.onclick = () => {
@@ -1131,6 +1171,7 @@ document.getElementById("view").addEventListener("click", e => {
       break;
     }
     case "deskDay": eventModal(null, ds); break;
+    case "deskSize": deskSizeModal(); break;
     case "ttAdd": courseModal(null); break;
     case "newPreset": presetModal(null); break;
     case "editPreset": presetModal(id); break;
@@ -1241,6 +1282,7 @@ route();
         S.items = new Map(snap.docs.map(d => [d.id, d.data()]));
         const st = S.items.get("settings");
         if (st && st.theme && st.theme !== document.documentElement.dataset.theme) applyTheme(st.theme);
+        if (S.desk && !overlay.classList.contains("open")) applyDesk();
         if (!snap.metadata.fromCache && !S.rolled) { S.rolled = true; rollover(); }
         setStatus(snap.metadata.fromCache ? "오프라인 · 연결되면 자동으로 동기화돼" : "");
         render();
