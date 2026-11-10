@@ -257,9 +257,11 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
 .dcell.out .n{opacity:.4}
 .dcell.sun .n{color:var(--sun)} .dcell.sat .n{color:var(--sat)}
 .dcell.is-today{box-shadow:inset 0 0 0 2px var(--accent)}
-.dline{font-size:.78em;line-height:1.35;margin-top:.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dline i{display:inline-block;width:.55em;height:.55em;border-radius:50%;margin-right:.35em;vertical-align:.08em}
-.dline.task{color:var(--ink2)} .dline.task.done{text-decoration:line-through;color:var(--muted)}
+.dline{font-size:.78em;line-height:1.35;margin-top:.2em;display:flex;align-items:flex-start;gap:.35em;word-break:keep-all;overflow-wrap:anywhere}
+.dline>span{min-width:0}
+.dline i{flex:none;width:.55em;height:.55em;border-radius:50%;margin-top:.42em}
+.dline.dtask{color:var(--ink2)} .dline.dtask.done{text-decoration:line-through;color:var(--muted)}
+.dline b{flex:none;font-weight:inherit}
 /* tabs fill the row on phones */
 @media (max-width:760px){
   nav.tabs{width:100%}
@@ -900,8 +902,8 @@ function viewDesk(){
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const ds = ymd(d), dow = d.getDay();
     const evs = eventsOn(ds), ts = tasksOn(ds);
-    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</div>`).join("")
-      + ts.map(t => `<div class="dline task ${t.done ? "done" : ""}">${t.done ? "☑" : "☐"} ${esc(t.title)}</div>`).join("");
+    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i><span>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</span></div>`).join("")
+      + ts.map(t => `<div class="dline dtask ${t.done ? "done" : ""}"><b>${t.done ? "☑" : "☐"}</b><span>${esc(t.title)}</span></div>`).join("");
     cells += `<div class="dcell ${d.getMonth() !== mo ? "out" : ""} ${dow===0?"sun":dow===6?"sat":""} ${ds===S.today?"is-today":""}" data-act="deskDay" data-date="${ds}">
       <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}</div>${lines}</div>`;
   }
