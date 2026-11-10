@@ -193,6 +193,14 @@ body.desk .desk .btn:hover{background:var(--hover)}
 .desk .dcell .n,.desk .desk-top h2{color:var(--ink)}
 .desk .dcell.sun .n{color:var(--sun)} .desk .dcell.sat .n{color:var(--sat)}
 .dbar select{border:1px solid var(--line);border-radius:6px;background:var(--input);padding:2px 4px}
+/* desk routine badge */
+.dcell .n{display:flex;align-items:center;gap:.4em}
+.rt{display:inline-flex;align-items:center;gap:.2em;color:var(--muted);font-size:.85em;font-weight:500;padding:.05em .3em;border-radius:999px;cursor:pointer}
+.rt svg{width:1.05em;height:1.05em}
+.rt em{font-style:normal;font-size:.85em}
+.rt.today{color:var(--accent)}
+.rt.alldone{opacity:.4}
+.rt:hover{background:var(--hover)}
 /* desk drag editor */
 .dedit{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.18)}
 .dframe{position:fixed;border:2px dashed var(--accent);border-radius:14px;cursor:move;touch-action:none;background:rgba(255,255,255,.04)}
@@ -894,6 +902,34 @@ function deskSizeModal(){
     ov.remove();
   });
 }
+/* 배경화면: 루틴 표시 */
+const RT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>';
+function routinesOn(ds){
+  const d = parse(ds);
+  return all("check").filter(isRoutine).filter(it => !it.created || ymd(new Date(it.created)) <= ds).filter(it =>
+    it.repeat === "daily" || (it.repeat === "days" && (it.days||[]).includes(d.getDay())) || ((it.repeat === "weekly" || it.repeat === "monthly") && ds === S.today));
+}
+const doneOn = (it, ds) => (it.history || []).includes(periodKey(it, parse(ds)));
+function routineBadge(ds){
+  if (ds > S.today) return "";
+  const rs = routinesOn(ds); if (!rs.length) return "";
+  const done = rs.filter(it => doneOn(it, ds)).length, all_ = done === rs.length;
+  return `<span class="rt ${all_ ? "alldone" : ""} ${ds === S.today ? "today" : ""}" data-act="deskRoutine" data-date="${ds}" title="루틴 ${done}/${rs.length}">${RT_SVG}</span>`;
+}
+function deskRoutineModal(ds){
+  const draw = () => {
+    const rs = routinesOn(ds), isToday = ds === S.today;
+    modal.innerHTML = `<h3>${fmtMD(ds)} 루틴</h3>
+      ${isToday ? "" : `<div class="muted" style="font-size:12.5px;margin-bottom:6px">지난 날짜는 기록만 볼 수 있어.</div>`}
+      <ul class="list">${rs.map(it => { const dn = doneOn(it, ds); return `<li class="task ${dn ? "done" : ""}">
+        <button class="chk" ${isToday ? `data-rt="${it.id}"` : "disabled"} aria-label="체크">${CHECK_SVG}</button>
+        <span class="ttl">${esc(it.title)}</span><span class="badge g">${esc(repeatLabel(it))}</span></li>`; }).join("")}</ul>
+      <div class="modal-foot"><span class="spacer"></span><button class="btn primary" id="mcancel">닫기</button></div>`;
+    modal.querySelector("#mcancel").onclick = closeModal;
+    modal.querySelectorAll("[data-rt]").forEach(b => b.onclick = () => { toggleCheck(b.dataset.rt); draw(); });
+  };
+  draw(); overlay.classList.add("open");
+}
 function viewDesk(){
   const m = S.month, y = m.getFullYear(), mo = m.getMonth();
   const start = startOfWeek(new Date(y, mo, 1));
@@ -905,7 +941,7 @@ function viewDesk(){
     const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i><span>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</span></div>`).join("")
       + ts.map(t => `<div class="dline dtask ${t.done ? "done" : ""}"><b>${t.done ? "☑" : "☐"}</b><span>${esc(t.title)}</span></div>`).join("");
     cells += `<div class="dcell ${d.getMonth() !== mo ? "out" : ""} ${dow===0?"sun":dow===6?"sat":""} ${ds===S.today?"is-today":""}" data-act="deskDay" data-date="${ds}">
-      <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}</div>${lines}</div>`;
+      <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}${routineBadge(ds)}</div>${lines}</div>`;
   }
   const head = ["월","화","수","목","금","토","일"].map((w,i) => `<div class="${i===6?"sun":i===5?"sat":""}">${w}요일</div>`).join("");
   return `<div class="desk">
@@ -1272,6 +1308,7 @@ document.getElementById("view").addEventListener("click", e => {
       break;
     }
     case "deskDay": eventModal(null, ds); break;
+    case "deskRoutine": deskRoutineModal(ds); break;
     case "deskSize": deskSizeModal(); break;
     case "ttAdd": courseModal(null); break;
     case "newPreset": presetModal(null); break;
