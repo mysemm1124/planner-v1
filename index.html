@@ -197,25 +197,29 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .pcard .nm{flex:1;font-weight:500}
 /* desk (wallpaper) mode */
 html.desk,html.desk body{background:transparent}
-.desk-bg{position:fixed;inset:0;background:var(--bg);z-index:-1;pointer-events:none}
+.desk-bg{position:fixed;background:var(--bg);z-index:-1;pointer-events:none}
+body.desk main{position:relative;isolation:isolate}
+body.desk main{max-width:100vw}
 body.desk .wrap{max-width:none;padding:0;height:100vh;display:flex;flex-direction:column}
-body.desk header,body.desk .topline{display:none}
+body.desk header,body.desk .topline{display:none !important}
+html.desk,html.desk body{overflow:hidden;height:100%;margin:0}
 body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
-.desk{flex:1;display:flex;flex-direction:column;min-height:0;padding:14px 18px 12px}
-.desk-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.desk-top h2{margin:0;font-size:20px;font-weight:600}
-.desk-head,.desk-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.desk-head div{text-align:center;font-size:13px;color:var(--muted);font-weight:600;padding:4px 0}
+.desk{flex:1;display:flex;flex-direction:column;min-height:0;padding:.9em 1.1em .75em;font-size:var(--dz,16px)}
+.desk .btn{font-size:.85em;padding:.3em .7em}
+.desk-top{display:flex;align-items:center;gap:.6em;margin-bottom:.5em}
+.desk-top h2{margin:0;font-size:1.25em;font-weight:600}
+.desk-head,.desk-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.desk-head div{text-align:center;font-size:.8em;color:var(--muted);font-weight:600;padding:.25em 0}
 .desk-head .sun{color:var(--sun)} .desk-head .sat{color:var(--sat)}
-.desk-grid{flex:1;min-height:0;grid-auto-rows:1fr}
-.dcell{border-top:1px solid var(--line);padding:6px 7px;overflow:hidden;cursor:pointer;min-width:0;border-radius:6px}
+.desk-grid{flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
+.dcell{border-top:1px solid var(--line);padding:.4em .45em;overflow:hidden;cursor:pointer;min-width:0;border-radius:6px}
 .dcell:hover{background:var(--hover)}
-.dcell .n{font-size:13px;font-weight:600}
+.dcell .n{font-size:.8em;font-weight:600}
 .dcell.out .n{opacity:.4}
 .dcell.sun .n{color:var(--sun)} .dcell.sat .n{color:var(--sat)}
 .dcell.is-today{box-shadow:inset 0 0 0 2px var(--accent)}
-.dline{font-size:12.5px;line-height:1.35;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dline i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dline{font-size:.78em;line-height:1.35;margin-top:.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dline i{display:inline-block;width:.55em;height:.55em;border-radius:50%;margin-right:.35em;vertical-align:.08em}
 .dline.task{color:var(--ink2)} .dline.task.done{text-decoration:line-through;color:var(--muted)}
 /* tabs fill the row on phones */
 @media (max-width:760px){
@@ -750,6 +754,17 @@ if (S.desk) {
   const a = Number((location.search.match(/[?&]a=(\d+)/) || [])[1] ?? 55);
   const bg = document.createElement("div"); bg.className = "desk-bg"; bg.style.opacity = Math.max(0, Math.min(100, a)) / 100;
   document.body.prepend(bg);
+  // 크기·위치: z=글씨크기(%), w=너비(%), h=높이(%), x=left|center|right, y=top|center|bottom
+  const q = k => (location.search.match(new RegExp("[?&]" + k + "=([\\w.]+)")) || [])[1];
+  const z = Number(q("z")), W = Math.min(100, Number(q("w")) || 100), H = Math.min(100, Number(q("h")) || 100);
+  const st = document.createElement("style");
+  st.textContent = `
+    ${z ? `body.desk{--dz:${16*z/100}px}` : ""}
+    body.desk main,.desk-bg{position:fixed;width:${W}vw;height:${H}vh;
+      left:${({left:"0", right:(100-W)+"vw"})[q("x")] ?? ((100-W)/2)+"vw"};
+      top:${({top:"0", bottom:(100-H)+"vh"})[q("y")] ?? ((100-H)/2)+"vh"};
+      ${W < 100 || H < 100 ? "border-radius:14px;overflow:hidden" : ""}}`;
+  document.head.appendChild(st);
 }
 function viewDesk(){
   const m = S.month, y = m.getFullYear(), mo = m.getMonth();
