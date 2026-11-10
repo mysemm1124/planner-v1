@@ -201,8 +201,8 @@ body.desk .desk .btn:hover{background:var(--hover)}
 .dh-e,.dh-w{top:50%;margin-top:-9px;cursor:ew-resize} .dh-e{right:-10px} .dh-w{left:-10px}
 .dh-ne{top:-10px;right:-10px;cursor:nesw-resize} .dh-sw{bottom:-10px;left:-10px;cursor:nesw-resize}
 .dh-nw{top:-10px;left:-10px;cursor:nwse-resize} .dh-se{bottom:-10px;right:-10px;cursor:nwse-resize}
-.dhint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--paper);color:var(--ink2);font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}
-.dbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--paper);padding:8px 12px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;color:var(--ink2)}
+.dhint{position:absolute;left:50%;top:calc(50% - 22px);transform:translate(-50%,-50%);background:var(--paper);color:var(--ink2);font-size:13px;padding:6px 12px;border-radius:999px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}
+.dbar{position:absolute;left:50%;top:calc(50% + 28px);transform:translateX(-50%);cursor:default;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 24px);display:flex;gap:10px;align-items:center;background:var(--paper);padding:8px 12px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;color:var(--ink2)}
 .dbar label{display:flex;align-items:center;gap:6px}
 .dbar input{width:110px}
 /* no color */
@@ -838,14 +838,13 @@ function deskSizeModal(){
   ov.innerHTML = `<div class="dframe" data-h="move">
       ${["n","s","e","w","ne","nw","se","sw"].map(h => `<i class="dh dh-${h}" data-h="${h}"></i>`).join("")}
       <div class="dhint">드래그해서 옮기고, 모서리·가장자리를 끌어서 크기 조절</div>
-    </div>
     <div class="dbar">
       <label>배경 <input type="range" name="a" min="0" max="100" value="${c.a}"></label>
       <label>글자 <select name="ink"><option value="auto">테마색</option><option value="light">흰색</option><option value="dark">검정</option></select></label>
       <button class="btn" data-x="clear">완전 투명</button>
       <label>글씨 <input type="range" name="z" min="60" max="140" value="${c.z}"></label>
       <button class="btn" data-x="reset">기본값</button><button class="btn" data-x="cancel">취소</button><button class="btn primary" data-x="save">저장</button>
-    </div>`;
+    </div></div>`;
   document.body.appendChild(ov);
   ov.querySelector("[name=ink]").value = c.ink || "auto";
   const fr = ov.querySelector(".dframe");
