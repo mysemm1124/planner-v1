@@ -340,10 +340,6 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
   .task .mini{margin-left:auto}
   .bar h2{font-size:17px}
 }
-.shift{border:1px solid var(--line);flex:none}
-.imp-slot{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;color:var(--ink2)}
-.imp-slot span:first-child{width:18px;font-weight:600}
-.imp-slot input{border:1px solid var(--line);border-radius:7px;padding:3px 6px;background:var(--input);font-size:13px;width:auto}
 /* theme picker */
 .themes{display:flex;gap:6px;align-items:center}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
@@ -864,9 +860,9 @@ function gridAnalyze(px, W, H){
 }
 function fixTimes(courses, meta, pic){
   try {
-    const g = gridAnalyze(pic.data, pic.w, pic.h); if (!g) { courses.why = "격자선을 못 찾음"; return courses; }
+    const g = gridAnalyze(pic.data, pic.w, pic.h); if (!g) return courses;
     const days = (meta.days || []).map(d => DAY_KO[d] ?? -1), hours = (meta.hours || []).map(Number).filter(n => n >= 0 && n < 24);
-    if (days.length !== g.cols.length || !hours.length) { courses.why = `요일 칸 수 불일치: 머리글 ${days.length}개 / 찾은 칸 ${g.cols.length}개`; return courses; }
+    if (days.length !== g.cols.length || !hours.length) return courses;
     const perRow = g.rows >= hours.length * 2 - 1 ? 30 : 60, base = hours[0] * 60;
     const toT = y => Math.round((base + (y - g.top) / g.rowH * perRow) / 5) * 5;
     const pool = g.blocks.map((bs, i) => bs.map(b => ({day: days[i], start: toT(b.s), end: toT(b.e + 1), used:false})));
@@ -923,20 +919,10 @@ function importModal(){
     try {
       found = await recognizeTimetable(await downscale(file));
       if (!found.length) { body.innerHTML = ""; err.textContent = "수업을 찾지 못했어. 시간표 부분만 잘라서 다시 올려봐."; return; }
-      body.innerHTML = `<div class="imp-list">${found.map((c,i) => `<div class="imp-item"><input type="checkbox" class="impchk" data-i="${i}" checked>
-        <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;min-width:0"><b>${esc(c.name)}</b>${c.room ? ` <span class="muted">· ${esc(c.room)}</span>` : ""}</span>
-          <button type="button" class="mini shift" data-shift="-30" data-i="${i}">‹ 30분</button><button type="button" class="mini shift" data-shift="30" data-i="${i}">30분 ›</button></div>
-        <div class="muted imp-times" data-i="${i}" style="font-size:12.5px">${c.slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ")}</div></div></div>`).join("")}</div>
+      body.innerHTML = `<div class="imp-list">${found.map((c,i) => `<label class="imp-item"><input type="checkbox" data-i="${i}" checked>
+        <div><b>${esc(c.name)}</b>${c.room ? ` <span class="muted">· ${esc(c.room)}</span>` : ""}<div class="muted" style="font-size:12.5px">${c.slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ")}</div></div></label>`).join("")}</div>
         ${courses().length ? `<label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="impReplace"> 기존 시간표 지우고 바꾸기</label>` : ""}
         <div class="muted" style="font-size:12px;margin-top:6px">틀린 부분은 추가한 다음 수업을 눌러서 고치면 돼.</div>`;
-      body.querySelectorAll("[data-shift]").forEach(btn => btn.onclick = () => {
-        const i = +btn.dataset.i, d = +btn.dataset.shift;
-        found[i].slots.forEach((x, j) => {
-          const st = Math.max(0, Math.min(1440 - 5, toMin(x.start) + d)), en = Math.max(st + 5, Math.min(1439, toMin(x.end) + d));
-          x.start = toHM(st); x.end = toHM(en);
-        });
-        body.querySelector(`.imp-times[data-i="${i}"]`).textContent = found[i].slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ");
-      });
       saveBtn.style.display = "";
     } catch (ex) {
       console.error(ex); body.innerHTML = "";
@@ -947,7 +933,7 @@ function importModal(){
     }
   };
   modal.querySelector("#impSave").onclick = () => {
-    const pick = [...modal.querySelectorAll(".impchk:checked")].map(x => found[Number(x.dataset.i)]);
+    const pick = [...modal.querySelectorAll(".imp-item input:checked")].map(x => found[Number(x.dataset.i)]);
     const rep = modal.querySelector("#impReplace");
     if (rep && rep.checked) courses().forEach(c => removeItem(c.id));
     const used = rep && rep.checked ? [] : courses().map(c => c.color);
