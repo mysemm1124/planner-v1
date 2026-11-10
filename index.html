@@ -98,6 +98,7 @@ nav.tabs a.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba
 @media (max-width:600px){
   .cell{min-height:62px;padding:3px}
   .chip{font-size:0;height:5px;padding:0;border-radius:3px}
+  .chip.plain{background:transparent !important;border:1px solid var(--accent);height:6px}
   .more{display:none}
   .tcount{display:none}
 }
@@ -220,6 +221,8 @@ body.desk .modal{box-shadow:0 12px 40px rgba(0,0,0,.28)}
 .colors .nocolor{background:var(--paper) !important;border:1.5px dashed var(--muted) !important;position:relative}
 .colors .nocolor::after{content:"";position:absolute;left:3px;right:3px;top:50%;border-top:1.5px solid var(--muted);transform:rotate(-45deg)}
 .chip.plain{color:var(--ink);padding-left:2px}
+.chip.tbar{display:none}
+@media (max-width:600px){.chip.tbar{display:block}}
 .dot.plain,.dline i.plain,.pchip i.plain,.pcard .sw.plain{background:transparent !important;box-shadow:inset 0 0 0 1.5px var(--muted)}
 .dline i.plain{display:none}
 /* past events + celebration */
@@ -531,6 +534,7 @@ function viewMonth(){
       ${ts.length ? `<span class="tcount ${done === ts.length ? "all" : ""}">✓${done}/${ts.length}</span>` : ""}
       ${evs.slice(0,3).map(e => `<div class="chip ${eventPast(e) ? "past" : ""} ${plain(e.color)}" style="background:${esc(bgOf(e.color))}">${e.time ? esc(e.time)+" " : ""}${esc(e.title)}</div>`).join("")}
       ${evs.length > 3 ? `<div class="more">+${evs.length-3}</div>` : ""}
+      ${ts.length && evs.length < 3 ? `<div class="chip plain tbar ${done === ts.length ? "past" : ""}"></div>` : ""}
     </div>`;
   }
   const head = ["월","화","수","목","금","토","일"].map((w,i) => `<div class="${i===6?"sun":i===5?"sat":""}">${w}</div>`).join("");
