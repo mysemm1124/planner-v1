@@ -185,6 +185,29 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .imp-item{display:flex;gap:8px;align-items:flex-start;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
 .imp-item input{margin-top:3px}
 .ev .cls{white-space:nowrap;flex:none;font-size:10.5px;padding:0 6px;border-radius:999px;background:var(--soft);color:var(--ink2)}
+/* presets */
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 11px 4px 8px;font-size:13px}
+.pchip:hover{background:var(--hover)}
+.pchip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.pcard{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px}
+.pcard:last-child{border-bottom:0}
+.pcard:hover{background:var(--hover)}
+.pcard .sw{width:14px;height:14px;border-radius:50%;flex:none}
+.pcard .nm{flex:1;font-weight:500}
+/* mobile fit */
+.ck-layout>*,.month-layout>*,.sects>*,.card{min-width:0}
+.task .badge{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:600px){
+  .wrap{padding:14px 12px 50px}
+  input,select,textarea{font-size:16px !important} /* 아이폰이 입력칸 누를 때 화면 확대하는 것 방지 */
+  .task{flex-wrap:wrap;row-gap:3px}
+  .task .ttl{flex-basis:calc(100% - 40px)}
+  .task .badge{margin-left:29px}
+  .task .badge~.badge{margin-left:0}
+  .task .mini{margin-left:auto}
+  .bar h2{font-size:17px}
+}
 /* theme picker */
 .themes{display:flex;gap:6px;align-items:center}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
@@ -225,6 +248,7 @@ html{color-scheme:light}
       <a href="#today" data-v="today">일별</a>
       <a href="#checklist" data-v="checklist">체크리스트</a>
       <a href="#timetable" data-v="timetable">시간표</a>
+      <a href="#presets" data-v="presets">프리셋</a>
     </nav>
   </header>
   <div style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><div class="themes" id="themes"></div><button class="mini" data-act="logout">로그아웃</button></div>
@@ -393,6 +417,7 @@ function dayDetail(ds, withHeader = true){
     <div class="sect-title">할 일 ${ts.length ? `<span class="badge g">${done}/${ts.length}</span>` : ""}</div>
     ${ts.length ? `<ul class="list">${ts.map(t => taskRow(t)).join("")}</ul>` : ""}
     ${addTaskForm(ds)}
+    ${presetChips(ds)}
   </div></div>`;
 }
 
@@ -447,9 +472,9 @@ function viewWeek(){
         ${evs.length ? `<ul class="list">${evs.map(ev => eventRow(ev, ds)).join("")}</ul>` : `<div class="empty">—</div>`}
       </div>
       <div>
-        <div class="wcol-title">할 일 ${ts.length ? `<span class="badge g">${done}/${ts.length}</span>` : ""}</div>
-        ${ts.length ? `<ul class="list">${ts.map(t => taskRow(t)).join("")}</ul>` : ""}
-        ${addTaskForm(ds)}
+        <div class="wcol-title"><span>할 일 ${ts.length ? `<span class="badge g">${done}/${ts.length}</span>` : ""}</span><button class="mini" data-act="weekAdd" data-date="${ds}">${S.weekAdd === ds ? "닫기" : "+ 할 일"}</button></div>
+        ${ts.length ? `<ul class="list">${ts.map(t => taskRow(t)).join("")}</ul>` : (S.weekAdd === ds ? "" : `<div class="empty">—</div>`)}
+        ${S.weekAdd === ds ? addTaskForm(ds) + presetChips(ds) : ""}
       </div>
     </div>`;
   }
@@ -698,6 +723,68 @@ function importModal(){
   };
 }
 
+/* ---------- presets ---------- */
+const DURS = [[30,"30분"],[60,"1시간"],[90,"1시간 30분"],[120,"2시간"],[180,"3시간"]];
+const presets = () => all("preset").sort((a,b) => (a.created||0)-(b.created||0));
+const durLabel = m => m % 60 ? (m >= 60 ? `${Math.floor(m/60)}시간 ${m%60}분` : `${m}분`) : `${m/60}시간`;
+function presetChips(ds){
+  const ps = presets(); if (!ps.length) return "";
+  return `<div class="presets">${ps.map(p => `<button class="pchip" data-act="usePreset" data-id="${p.id}" data-date="${ds}"><i style="background:${esc(p.color)}"></i>${esc(p.name)}</button>`).join("")}</div>`;
+}
+function viewPresets(){
+  const ps = presets();
+  return `<div class="day-wrap"><div class="bar"><h2>프리셋</h2><span class="spacer"></span><button class="btn primary" data-act="newPreset">+ 프리셋</button></div>
+    <div class="card panel">
+      ${ps.length ? ps.map(p => `<div class="pcard" data-act="editPreset" data-id="${p.id}"><span class="sw" style="background:${esc(p.color)}"></span><span class="nm">${esc(p.name)}</span>
+        <span class="badge n">${durLabel(p.dur)}</span>${p.defTime ? `<span class="badge g">${esc(p.defTime)} 시작</span>` : ""}</div>`).join("")
+      : `<div class="empty">자주 넣는 일정(PT, 알바, 스터디 …)을 프리셋으로 만들어두면, 할 일 추가 칸 아래 버튼으로 날짜와 시간만 골라서 바로 넣을 수 있어.</div>`}
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:8px">프리셋 버튼은 월간(날짜 누른 패널)과 일별 화면의 할 일 추가 칸 아래에 나와.</div></div>`;
+}
+function presetModal(id){
+  const p = id ? {id, ...S.items.get(id)} : {name:"", color:COLORS[0], dur:60, defTime:"", memo:""};
+  const custom = !DURS.some(d => d[0] === p.dur);
+  const f = openModal(id ? "프리셋 수정" : "새 프리셋", `
+    <div class="field"><label>이름</label><input name="title" value="${esc(p.name)}" placeholder="예: PT" required></div>
+    <div class="row2">
+      <div class="field"><label>소요 시간</label><select name="dur">${DURS.map(([m,l]) => `<option value="${m}" ${m===p.dur?"selected":""}>${l}</option>`).join("")}<option value="custom" ${custom?"selected":""}>직접 입력</option></select></div>
+      <div class="field" id="customDur"><label>분 단위로</label><input type="number" name="mins" min="5" step="5" value="${p.dur}"></div>
+    </div>
+    <div class="field"><label>기본 시작 시간 (선택)</label><input type="time" name="defTime" value="${esc(p.defTime||"")}"></div>
+    ${colorPicker(p.color||COLORS[0])}
+    <div class="field"><label>메모 (선택, 일정에 같이 들어가)</label><input name="memo" value="${esc(p.memo||"")}" placeholder="예: 헬스장 2층"></div>`,
+    f => {
+      const name = f.title.value.trim(); if (!name) return "이름을 적어줘.";
+      const dur = f.dur.value === "custom" ? Number(f.mins.value) : Number(f.dur.value);
+      if (!dur || dur < 5 || dur > 1440) return "소요 시간을 확인해줘 (5분~24시간).";
+      save(id || uid("ps"), {kind:"preset", name, dur, defTime:f.defTime.value, color:f.color.value, memo:f.memo.value.trim(), created:p.created || Date.now()});
+    },
+    id ? () => removeItem(id) : null);
+  wireColors(f);
+  const cd = f.querySelector("#customDur"), sync = () => cd.style.visibility = f.dur.value === "custom" ? "visible" : "hidden";
+  f.dur.onchange = sync; sync();
+}
+function usePresetModal(id, ds){
+  const p = S.items.get(id); if (!p) return;
+  const now = new Date(), guess = p.defTime || toHM(Math.min(23*60, (now.getHours()+1)*60));
+  const f = openModal(p.name + " 추가", `
+    <div class="row2">
+      <div class="field"><label>날짜</label><input type="date" name="date" value="${esc(ds < S.today ? S.today : ds)}" required></div>
+      <div class="field"><label>시작 시간</label><input type="time" name="time" value="${esc(guess)}" step="300" required></div>
+    </div>
+    <div class="muted" id="endInfo" style="font-size:13px"></div>`,
+    f => {
+      if (!f.date.value || !f.time.value) return "날짜와 시간을 골라줘.";
+      const st = toMin(f.time.value), en = st + p.dur;
+      const endDate = en >= 1440 ? ymd(addDays(parse(f.date.value), Math.floor(en/1440))) : "";
+      save(uid("ev"), {kind:"event", title:p.name, date:f.date.value, endDate, time:f.time.value, endTime:toHM(en % 1440), color:p.color, memo:p.memo||"", preset:id, created:Date.now()});
+    });
+  const info = f.querySelector("#endInfo");
+  const upd = () => { if (!f.time.value) { info.textContent = ""; return; } const en = toMin(f.time.value) + p.dur; info.textContent = `${durLabel(p.dur)} · ${toHM(en % 1440)}에 끝나${en >= 1440 ? " (다음 날)" : ""}`; };
+  f.time.oninput = upd; upd();
+  setTimeout(() => f.time.focus(), 40);
+}
+
 /* ---------- theme ---------- */
 const THEMES = [["rose","#fadbd8","로즈"],["white","#ffffff","화이트"],["black","#000000","블랙"],["sky","#bbcbd2","블루그레이"],["butter","#fad892","버터"],["navy","#081a2e","네이비"]];
 function applyTheme(t){
@@ -727,7 +814,7 @@ function render(){
   const kept = {};
   view.querySelectorAll("[data-keep]").forEach(el => { if (el.value) kept[el.dataset.keep] = el.value; });
   const sel = keep ? [ae.selectionStart, ae.selectionEnd] : null;
-  view.innerHTML = S.view === "week" ? viewWeek() : S.view === "today" ? viewToday() : S.view === "checklist" ? viewChecklist() : S.view === "timetable" ? viewTimetable() : viewMonth();
+  view.innerHTML = S.view === "week" ? viewWeek() : S.view === "today" ? viewToday() : S.view === "checklist" ? viewChecklist() : S.view === "timetable" ? viewTimetable() : S.view === "presets" ? viewPresets() : viewMonth();
   view.querySelectorAll("[data-keep]").forEach(el => { if (kept[el.dataset.keep]) el.value = kept[el.dataset.keep]; });
   if (keep) { const el = view.querySelector(`[data-keep="${CSS.escape(keep)}"]`); if (el) { el.focus(); try { el.setSelectionRange(...sel); } catch(_){} } }
 }
@@ -735,7 +822,7 @@ function render(){
 /* ---------- routing ---------- */
 function route(){
   const h = location.hash.replace("#","");
-  S.view = ["month","week","today","checklist","timetable"].includes(h) ? h : "month";
+  S.view = ["month","week","today","checklist","timetable","presets"].includes(h) ? h : "month";
   render();
 }
 window.addEventListener("hashchange", route);
@@ -873,7 +960,15 @@ document.getElementById("view").addEventListener("click", e => {
     case "toggleCheck": toggleCheck(id); break;
     case "editCheck": checkModal(id); break;
     case "newCheck": checkModal(null); break;
+    case "weekAdd": {
+      S.weekAdd = S.weekAdd === ds ? null : ds; render();
+      if (S.weekAdd) { const inp = document.querySelector(`[data-keep="task-${ds}"]`); if (inp) inp.focus(); }
+      break;
+    }
     case "ttAdd": courseModal(null); break;
+    case "newPreset": presetModal(null); break;
+    case "editPreset": presetModal(id); break;
+    case "usePreset": usePresetModal(id, ds || S.today); break;
     case "ttImport": importModal(); break;
     case "editCourse": e.stopPropagation(); courseModal(id); break;
     case "ttNew": {
