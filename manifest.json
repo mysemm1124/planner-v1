@@ -1,6 +1,6 @@
 {
-  "name": "나의 일정관리",
-  "short_name": "일정관리",
+  "name": "Me.Plan",
+  "short_name": "Me.Plan",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
