@@ -195,6 +195,11 @@ details.rest summary{cursor:pointer;font-size:13px;color:var(--muted);margin-top
 .pcard:hover{background:var(--hover)}
 .pcard .sw{width:14px;height:14px;border-radius:50%;flex:none}
 .pcard .nm{flex:1;font-weight:500}
+/* tabs fill the row on phones */
+@media (max-width:760px){
+  nav.tabs{width:100%}
+  nav.tabs a{flex:1 0 auto;text-align:center;padding:7px 10px}
+}
 /* mobile fit */
 .ck-layout>*,.month-layout>*,.sects>*,.card{min-width:0}
 .task .badge{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
