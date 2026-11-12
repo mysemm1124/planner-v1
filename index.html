@@ -346,6 +346,7 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
 .imp-slot input{border:1px solid var(--line);border-radius:7px;padding:3px 6px;background:var(--input);font-size:13px;width:auto}
 /* theme picker */
 .themes{display:flex;gap:6px;align-items:center}
+.modal .themes button{width:30px;height:30px}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
 .themes button.on{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ink)}
 .themes button.plus{background:conic-gradient(#f87171,#fbbf24,#a3e635,#34d399,#60a5fa,#a78bfa,#f472b6,#f87171);color:#fff;font-size:13px;line-height:1;font-weight:700;text-shadow:0 0 2px rgba(0,0,0,.5);display:inline-flex;align-items:center;justify-content:center}
@@ -381,7 +382,7 @@ html{color-scheme:light}
     </div>
     <nav class="tabs" id="tabs"></nav>
   </header>
-  <div class="topline" style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><div class="themes" id="themes"></div><button class="mini" data-act="wallInfo" title="배경화면으로 쓰는 법" aria-label="배경화면으로 쓰는 법">ⓘ</button><button class="mini" data-act="tabSettings" title="설정">⚙ 설정</button><button class="mini" data-act="logout">로그아웃</button></div>
+  <div class="topline" style="display:flex;gap:8px;align-items:center;margin:-8px 0 12px"><div class="status" id="status">연결하는 중…</div><span class="spacer"></span><button class="mini" data-act="wallInfo" title="배경화면으로 쓰는 법" aria-label="배경화면으로 쓰는 법">ⓘ</button><button class="mini" data-act="tabSettings" title="설정">⚙ 설정</button><button class="mini" data-act="logout">로그아웃</button></div>
   <main id="view"></main>
 </div>
 
@@ -450,9 +451,13 @@ function removeItem(id){
 
 /* ---------- carry-over (4) ---------- */
 function rollover(){
+  // 화면에 들고 있는 예전 데이터로 문서를 통째로 덮어쓰면 다른 기기에서 체크한 게 풀릴 수 있어서,
+  // 서버의 최신 상태를 확인하고 '아직 안 끝난' 할 일의 날짜만 바꿔.
   const t = todayStr();
   for (const task of all("task")) {
-    if (!task.done && task.date < t) save(task.id, {...task, date: t, origDate: task.origDate || task.date});
+    if (task.done || task.date >= t) continue;
+    if (S.col && S.col.roll) S.col.roll(task.id, t).catch(e => console.warn("rollover", e));
+    else { S.items.set(task.id, {...S.items.get(task.id), date: t, origDate: task.origDate || task.date}); render(); }
   }
 }
 setInterval(() => {
@@ -1191,7 +1196,7 @@ function ymPicker(kind){
 
 /* ---------- 폰 알림 (Firebase Cloud Messaging + GitHub 자동 작업이 하루 최대 3번 발송) ---------- */
 // ▼ Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서의 '키 쌍'을 붙여넣어줘
-const VAPID_KEY = "여기에_붙여넣기";
+const VAPID_KEY = "BOsYZXdlKwIOnnWnGoqHTE5b5RojZbWvacGB5ELJKFPw-0JmGRCHtXT3_3-R6ZQCXUCYSpwMDRXYHpEl2O7NcjY";
 const pushTimes = () => Object.assign({m:false, e:false, n:false}, (S.items.get("settings") || {}).pushTimes || {});
 const pushDeviceOn = () => { try { const id = localStorage.getItem("planner-push-id"); return !!(id && S.items.get(id)); } catch(_) { return false; } };
 async function enablePush(msgEl){
@@ -1389,11 +1394,13 @@ function applyTheme(t, hexOverride){
 }
 function drawThemeDots(){
   const t = document.documentElement.dataset.theme, cc = customColor();
-  document.getElementById("themes").innerHTML = THEMES.map(([k,c,n]) => `<button data-theme="${k}" class="${k===t?"on":""}" title="${n}" aria-label="${n} 테마" style="background:${c}"></button>`).join("")
+  const box = document.getElementById("themes"); if (!box) return;
+  box.innerHTML = THEMES.map(([k,c,n]) => `<button data-theme="${k}" class="${k===t?"on":""}" title="${n}" aria-label="${n} 테마" style="background:${c}"></button>`).join("")
     + (cc ? `<button data-theme="custom" class="${t==="custom"?"on":""}" title="내 색" aria-label="내 색 테마" style="background:${cc}"></button>` : "")
     + `<button data-act="customTheme" class="plus" title="색 직접 만들기" aria-label="색 직접 만들기">+</button>`;
 }
-document.getElementById("themes").addEventListener("click", e => {
+document.addEventListener("click", e => {
+  if (!e.target.closest("#themes")) return;
   if (e.target.closest("[data-act=customTheme]")) { customThemeModal(); return; }
   const b = e.target.closest("button[data-theme]"); if (!b) return;
   applyTheme(b.dataset.theme);
@@ -1504,7 +1511,9 @@ function tabSettingsModal(){
       <button type="button" class="mini" data-up="${i}" ${i===0?"disabled":""} aria-label="위로">▲</button>
       <button type="button" class="mini" data-down="${i}" ${i===cfg.length-1?"disabled":""} aria-label="아래로">▼</button></div>`).join("");
   };
-  const f = openModal("설정", `<div class="sect-title" style="margin-top:0">탭</div>
+  const f = openModal("설정", `<div class="sect-title" style="margin-top:0">테마</div>
+    <div class="themes" id="themes" style="flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
+    <div class="sect-title">탭</div>
     <div class="muted" style="font-size:13px;margin-bottom:6px">체크한 탭만 보여. ▲▼로 순서를 바꿔. 맨 위 탭이 처음 열리는 화면이야.</div><div id="tabList"></div>
     <div class="sect-title" style="margin-top:16px">월간 화면</div>
     <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="monthPanel" ${monthPanelOn() ? "checked" : ""}> 달력 위에 일정·할 일 칸 보이기</label>
@@ -1527,7 +1536,7 @@ function tabSettingsModal(){
       saveSettings({tabs: cfg, monthPanel: f.monthPanel.checked, monthRoutine: f.monthRoutine.checked, nickname: f.nickname.value.trim(), celebrate: f.celebrate.checked, pushTimes: {m: f.push_m.checked, e: f.push_e.checked, n: f.push_n.checked}});
       route();
     });
-  const box = f.querySelector("#tabList"); draw();
+  const box = f.querySelector("#tabList"); draw(); drawThemeDots();
   f.querySelector("#pushOn").onclick = () => enablePush(f.querySelector("#pushMsg"));
   f.querySelector("#tutAgain").onclick = () => { try { localStorage.removeItem("planner-tut-off"); } catch(_){} if (S.col) saveSettings({tutorialOff:false}); closeModal(); showTutorial(); };
   box.addEventListener("click", e => {
@@ -1793,6 +1802,11 @@ route();
       S.col = { doc: id => ({
         set: b => F.setDoc(F.doc(colRef, id), b),
         delete: () => F.deleteDoc(F.doc(colRef, id)),
+      }), roll: (id, t) => F.runTransaction(fs, async tx => {
+        const ref = F.doc(colRef, id), snap = await tx.get(ref);
+        if (!snap.exists()) return;
+        const d = snap.data();
+        if (d.kind === "task" && !d.done && d.date < t) tx.update(ref, {date: t, origDate: d.origDate || d.date});
       })};
       unsub = F.onSnapshot(colRef, {includeMetadataChanges: true}, snap => {
         S.items = new Map(snap.docs.map(d => [d.id, d.data()]));
