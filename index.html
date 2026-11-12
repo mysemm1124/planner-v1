@@ -319,6 +319,9 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
 .dcell.is-today{box-shadow:inset 0 0 0 2px var(--accent)}
 .dline{font-size:.78em;line-height:1.35;margin-top:.2em;display:flex;align-items:flex-start;gap:.35em;word-break:keep-all;overflow-wrap:anywhere}
 .dline>span{min-width:0}
+.dline[data-act]{border-radius:4px;cursor:pointer}
+.dline[data-act]:hover{background:var(--hover)}
+.dline b[data-act]{cursor:pointer}
 .dline i{flex:none;width:.55em;height:.55em;border-radius:50%;margin-top:.42em}
 .dline.dtask{color:var(--ink2)} .dline.dtask.done{text-decoration:line-through;color:var(--muted)}
 .dline b{flex:none;font-weight:inherit}
@@ -1091,8 +1094,8 @@ function viewDesk(){
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const ds = ymd(d), dow = d.getDay();
     const evs = eventsOn(ds), ts = tasksOn(ds);
-    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i><span>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</span></div>`).join("")
-      + ts.map(t => `<div class="dline dtask ${t.done ? "done" : ""}"><b>${t.done ? "☑" : "☐"}</b><span>${esc(t.title)}</span></div>`).join("");
+    const lines = evs.map(e => `<div class="dline ${eventPast(e) ? "past" : ""}" data-act="editEvent" data-id="${e.id}"><i class="${plain(e.color)}" style="background:${esc(bgOf(e.color))}"></i><span>${e.time ? esc(e.time) + " " : ""}${esc(e.title)}</span></div>`).join("")
+      + ts.map(t => `<div class="dline dtask ${t.done ? "done" : ""}" data-act="editTask" data-id="${t.id}"><b data-act="toggleTask" data-id="${t.id}" title="체크">${t.done ? "☑" : "☐"}</b><span>${esc(t.title)}</span></div>`).join("");
     cells += `<div class="dcell ${d.getMonth() !== mo ? "out" : ""} ${dow===0?"sun":dow===6?"sat":""} ${ds===S.today?"is-today":""}" data-act="deskDay" data-date="${ds}">
       <div class="n">${d.getDate() === 1 ? (d.getMonth()+1) + "월 " : ""}${d.getDate()}${routineBadge(ds)}</div>${lines}</div>`;
   }
@@ -1137,8 +1140,17 @@ const TUT = [
   ["🗓️", "시간표는 사진 한 장으로", "<b>시간표</b> 탭에서 <b>이미지로 불러오기</b>를 누르고 에브리타임 시간표 캡처를 올리면 AI가 읽어서 채워줘.<br>수업은 월간·주간·일간 화면에도 자동으로 나와."],
 ];
 function tutorialOff(){ try { if (localStorage.getItem("planner-tut-off")) return true; } catch(_){} return !!(S.items.get("settings") || {}).tutorialOff; }
+const TUT_INSTALL = ["📲", "폰에 앱으로 설치하기", `홈 화면에 앱으로 깔아두면 주소창 없이 바로 열리고, 알림도 받을 수 있어.<br>
+  <b>삼성 인터넷</b>: 주소창 오른쪽 <b>⬇ 아이콘</b>을 누르거나, 아래 <b>≡ 메뉴 → 현재 페이지 추가 → 홈 화면</b><br>
+  <b>크롬</b>: 오른쪽 위 <b>⋮ → 앱 설치</b> (또는 홈 화면에 추가)<br>
+  <b>아이폰 사파리</b>: 아래 <b>공유 버튼 → 홈 화면에 추가</b> (아이폰은 이렇게 설치해야 알림이 와)`];
+function tutPages(){
+  const mobile = matchMedia("(hover:none) and (pointer:coarse)").matches;
+  const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  return mobile && !installed ? [...TUT, TUT_INSTALL] : TUT;
+}
 function showTutorial(){
-  let i = 0;
+  let i = 0; const TUT = tutPages();
   const draw = () => {
     const [emo, title, body] = TUT[i], last = i === TUT.length - 1;
     modal.innerHTML = `<div class="tut">
