@@ -340,6 +340,10 @@ body.desk main{flex:1;display:flex;flex-direction:column;min-height:0}
   .task .mini{margin-left:auto}
   .bar h2{font-size:17px}
 }
+.shift{border:1px solid var(--line);flex:none}
+.imp-slot{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;color:var(--ink2)}
+.imp-slot span:first-child{width:18px;font-weight:600}
+.imp-slot input{border:1px solid var(--line);border-radius:7px;padding:3px 6px;background:var(--input);font-size:13px;width:auto}
 /* theme picker */
 .themes{display:flex;gap:6px;align-items:center}
 .themes button{width:18px;height:18px;border-radius:50%;padding:0;border:1px solid rgba(128,128,128,.45)}
@@ -860,9 +864,9 @@ function gridAnalyze(px, W, H){
 }
 function fixTimes(courses, meta, pic){
   try {
-    const g = gridAnalyze(pic.data, pic.w, pic.h); if (!g) return courses;
+    const g = gridAnalyze(pic.data, pic.w, pic.h); if (!g) { courses.why = "격자선을 못 찾음"; return courses; }
     const days = (meta.days || []).map(d => DAY_KO[d] ?? -1), hours = (meta.hours || []).map(Number).filter(n => n >= 0 && n < 24);
-    if (days.length !== g.cols.length || !hours.length) return courses;
+    if (days.length !== g.cols.length || !hours.length) { courses.why = `요일 칸 수 불일치: 머리글 ${days.length}개 / 찾은 칸 ${g.cols.length}개`; return courses; }
     const perRow = g.rows >= hours.length * 2 - 1 ? 30 : 60, base = hours[0] * 60;
     const toT = y => Math.round((base + (y - g.top) / g.rowH * perRow) / 5) * 5;
     const pool = g.blocks.map((bs, i) => bs.map(b => ({day: days[i], start: toT(b.s), end: toT(b.e + 1), used:false})));
@@ -919,10 +923,20 @@ function importModal(){
     try {
       found = await recognizeTimetable(await downscale(file));
       if (!found.length) { body.innerHTML = ""; err.textContent = "수업을 찾지 못했어. 시간표 부분만 잘라서 다시 올려봐."; return; }
-      body.innerHTML = `<div class="imp-list">${found.map((c,i) => `<label class="imp-item"><input type="checkbox" data-i="${i}" checked>
-        <div><b>${esc(c.name)}</b>${c.room ? ` <span class="muted">· ${esc(c.room)}</span>` : ""}<div class="muted" style="font-size:12.5px">${c.slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ")}</div></div></label>`).join("")}</div>
+      body.innerHTML = `<div class="imp-list">${found.map((c,i) => `<div class="imp-item"><input type="checkbox" class="impchk" data-i="${i}" checked>
+        <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1;min-width:0"><b>${esc(c.name)}</b>${c.room ? ` <span class="muted">· ${esc(c.room)}</span>` : ""}</span>
+          <button type="button" class="mini shift" data-shift="-30" data-i="${i}">‹ 30분</button><button type="button" class="mini shift" data-shift="30" data-i="${i}">30분 ›</button></div>
+        <div class="muted imp-times" data-i="${i}" style="font-size:12.5px">${c.slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ")}</div></div></div>`).join("")}</div>
         ${courses().length ? `<label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="impReplace"> 기존 시간표 지우고 바꾸기</label>` : ""}
         <div class="muted" style="font-size:12px;margin-top:6px">틀린 부분은 추가한 다음 수업을 눌러서 고치면 돼.</div>`;
+      body.querySelectorAll("[data-shift]").forEach(btn => btn.onclick = () => {
+        const i = +btn.dataset.i, d = +btn.dataset.shift;
+        found[i].slots.forEach((x, j) => {
+          const st = Math.max(0, Math.min(1440 - 5, toMin(x.start) + d)), en = Math.max(st + 5, Math.min(1439, toMin(x.end) + d));
+          x.start = toHM(st); x.end = toHM(en);
+        });
+        body.querySelector(`.imp-times[data-i="${i}"]`).textContent = found[i].slots.map(x => `${WD[x.day]} ${x.start}–${x.end}`).join(", ");
+      });
       saveBtn.style.display = "";
     } catch (ex) {
       console.error(ex); body.innerHTML = "";
@@ -933,7 +947,7 @@ function importModal(){
     }
   };
   modal.querySelector("#impSave").onclick = () => {
-    const pick = [...modal.querySelectorAll(".imp-item input:checked")].map(x => found[Number(x.dataset.i)]);
+    const pick = [...modal.querySelectorAll(".impchk:checked")].map(x => found[Number(x.dataset.i)]);
     const rep = modal.querySelector("#impReplace");
     if (rep && rep.checked) courses().forEach(c => removeItem(c.id));
     const used = rep && rep.checked ? [] : courses().map(c => c.color);
@@ -1173,6 +1187,35 @@ function ymPicker(kind){
     if (kind === "y") { ymPicker("m"); return; }
     closeModal(); render();
   });
+}
+
+/* ---------- 폰 알림 (Firebase Cloud Messaging + GitHub 자동 작업이 하루 최대 3번 발송) ---------- */
+// ▼ Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서의 '키 쌍'을 붙여넣어줘
+const VAPID_KEY = "여기에_붙여넣기";
+const pushTimes = () => Object.assign({m:false, e:false, n:false}, (S.items.get("settings") || {}).pushTimes || {});
+const pushDeviceOn = () => { try { const id = localStorage.getItem("planner-push-id"); return !!(id && S.items.get(id)); } catch(_) { return false; } };
+async function enablePush(msgEl){
+  const say = t => { if (msgEl) msgEl.textContent = t; };
+  if (!S.col) { say("로그인 후에 켤 수 있어."); return; }
+  if (VAPID_KEY.includes("붙여넣기")) { say("알림 키가 아직 설정되지 않았어."); return; }
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) { say("이 브라우저는 알림을 지원하지 않아. 아이폰은 홈 화면에 추가한 앱에서 켜줘."); return; }
+  let perm;
+  try { perm = await Notification.requestPermission(); } catch(_) { perm = "denied"; }
+  if (perm !== "granted") { say("알림 권한이 거절됐어. 브라우저(또는 폰) 설정에서 Me.Plan 알림을 허용해줘."); return; }
+  say("켜는 중…");
+  try {
+    const M = await import(FB + "firebase-messaging.js");
+    if (!(await M.isSupported())) { say("이 브라우저는 알림을 지원하지 않아. 아이폰은 홈 화면에 추가한 앱에서 켜줘."); return; }
+    const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+    const token = await M.getToken(M.getMessaging(FBX.app), {vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
+    if (!token) throw new Error("토큰을 못 받음");
+    let h = 0; for (const ch of token) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const id = "push_" + h.toString(36);
+    save(id, {kind:"push", token, ua: navigator.userAgent.slice(0, 120), created: Date.now()});
+    try { localStorage.setItem("planner-push-id", id); } catch(_){}
+    if (!Object.values(pushTimes()).some(Boolean)) say("✓ 켜졌어! 위에서 받을 시간을 골라줘.");
+    else say("✓ 이 기기는 알림을 받고 있어");
+  } catch (e) { console.error(e); say("켜지 못했어: " + (e.code || e.message || e)); }
 }
 
 /* ---------- celebration ---------- */
@@ -1470,15 +1513,22 @@ function tabSettingsModal(){
     <div class="sect-title" style="margin-top:16px">닉네임 · 축하 메시지</div>
     <div class="field"><input name="nickname" value="${esc(settingsDoc().nickname || "")}" placeholder="${esc(S.userName || "닉네임")}" maxlength="20"></div>
     <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="celebrate" ${celebrateOn() ? "checked" : ""}> 오늘 일정·할 일을 다 끝내면 축하 메시지 보이기</label>
+    <div class="sect-title" style="margin-top:16px">폰 알림</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:14px">
+      ${[["m","아침 9시"],["e","저녁 6시"],["n","밤 10시"]].map(([k,l]) => `<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="push_${k}" ${pushTimes()[k] ? "checked" : ""}> ${l}</label>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn" id="pushOn">이 기기에서 알림 받기</button><span class="muted" id="pushMsg" style="font-size:12.5px">${pushDeviceOn() ? "✓ 이 기기는 알림을 받고 있어" : ""}</span></div>
+    <div class="muted" style="font-size:12px;margin-top:4px">아침엔 오늘 요약, 저녁엔 남은 할 일, 밤엔 못 끝낸 할 일·루틴과 내일 첫 일정을 알려줘. 시간은 몇 분 늦을 수 있어. 아이폰은 홈 화면에 추가한 앱에서만 받을 수 있어.</div>
     <div class="sect-title" style="margin-top:16px">도움말</div>
     <button type="button" class="btn" id="tutAgain">튜토리얼 다시 보기</button>`,
     f => {
       if (!cfg.some(t => t.on)) return "탭을 하나 이상 켜줘.";
       try { localStorage.setItem("planner-tabs", JSON.stringify(cfg)); } catch(_){}
-      saveSettings({tabs: cfg, monthPanel: f.monthPanel.checked, monthRoutine: f.monthRoutine.checked, nickname: f.nickname.value.trim(), celebrate: f.celebrate.checked});
+      saveSettings({tabs: cfg, monthPanel: f.monthPanel.checked, monthRoutine: f.monthRoutine.checked, nickname: f.nickname.value.trim(), celebrate: f.celebrate.checked, pushTimes: {m: f.push_m.checked, e: f.push_e.checked, n: f.push_n.checked}});
       route();
     });
   const box = f.querySelector("#tabList"); draw();
+  f.querySelector("#pushOn").onclick = () => enablePush(f.querySelector("#pushMsg"));
   f.querySelector("#tutAgain").onclick = () => { try { localStorage.removeItem("planner-tut-off"); } catch(_){} if (S.col) saveSettings({tutorialOff:false}); closeModal(); showTutorial(); };
   box.addEventListener("click", e => {
     const u = e.target.closest("[data-up]"), d = e.target.closest("[data-down]");
