@@ -1,0 +1,30 @@
+name: Me.Plan 알림
+
+on:
+  schedule:
+    - cron: "0 0 * * *"    # 한국 09:00
+    - cron: "0 9 * * *"    # 한국 18:00
+    - cron: "0 13 * * *"   # 한국 22:00
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "테스트 발송 (m=아침, e=저녁, n=밤)"
+        default: "m"
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 준비
+        working-directory: remind
+        run: npm install --no-audit --no-fund firebase-admin@12
+      - name: 알림 보내기
+        working-directory: remind
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SLOT: ${{ github.event.inputs.slot }}
+        run: node remind.mjs
